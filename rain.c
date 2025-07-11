@@ -236,8 +236,7 @@ void initCurses()
     timeout(0);
     signal(SIGWINCH, handleResize);
 
-    int hazColors = has_colors() && can_change_color();
-    if (hazColors)
+    if (has_colors())
     {
         use_default_colors();
         start_color();
