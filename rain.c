@@ -154,6 +154,7 @@ void d_show(Drop *d)
 {
     attron(COLOR_PAIR(d->color));
     mvaddch(d->h, d->w, d->shape);
+    attroff(COLOR_PAIR(d->color));
 }
 
 
@@ -402,6 +403,8 @@ int main(int argc, char **argv)
             d_fall(v_getAt(&drops, i));
             d_show(v_getAt(&drops, i));
         }
+
+        refresh();
 
         // Frame Delay
         mssleep(30);

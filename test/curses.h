@@ -23,6 +23,7 @@ static inline void use_default_colors(void)       {}
 static inline void start_color(void)              {}
 static inline void init_pair(short p, short f, short b) { (void)p; (void)f; (void)b; }
 static inline void attron(int a)                  { (void)a; }
+static inline void attroff(int a)                 { (void)a; }
 static inline void mvaddch(int y, int x, char c)  { (void)y; (void)x; (void)c; }
 static inline void endwin(void)                   {}
 static inline void refresh(void)                  {}
