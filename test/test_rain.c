@@ -86,6 +86,35 @@ static void vector_get_tests(void)
     v_delete(&v);
 }
 
+static void vector_grow_on_add_tests(void)
+{
+    COLS = 80; LINES = 24;
+    d_Vector v;
+    v_init(&v, 2);
+
+    for (int i = 0; i < 20; i++) {
+        Drop d = {0};
+        d.w     = i;
+        d.h     = i * 2;
+        d.speed = 1;
+        d.color = 1;
+        d.shape = '|';
+        v_add(&v, d);
+    }
+
+    CHECK(v.size     == 20, "v_add (grow): size correct after crossing capacity");
+    CHECK(v.capacity >= 20, "v_add (grow): capacity grew to fit");
+
+    int ok = 1;
+    for (int i = 0; i < 20; i++) {
+        Drop *d = v_getAt(&v, i);
+        if (d->w != i || d->h != i * 2) { ok = 0; break; }
+    }
+    CHECK(ok, "v_add (grow): preserves previously inserted data");
+
+    v_delete(&v);
+}
+
 static void vector_resize_tests(void)
 {
     COLS = 80; LINES = 24;
@@ -250,6 +279,7 @@ int main(void)
     vector_free_tests();
     vector_add_tests();
     vector_get_tests();
+    vector_grow_on_add_tests();
     vector_resize_tests();
     d_fall_advance_tests();
     d_fall_wrap_tests();

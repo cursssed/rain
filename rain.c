@@ -210,8 +210,17 @@ void v_resize(d_Vector *v, int newCap)
 
 void v_add(d_Vector *v, Drop d)
 {
-    if(v->size >= v->capacity)
-        v_resize(v, 2 * v->capacity);
+    if (v->size >= v->capacity)
+    {
+        int newCap = (v->capacity > 0) ? v->capacity * 2 : 1;
+        Drop *newDrops = realloc(v->drops, sizeof(Drop) * newCap);
+
+        if (newDrops == 0)
+            exitErr("\n*REALLOC FAILED*\n");
+
+        v->drops    = newDrops;
+        v->capacity = newCap;
+    }
 
     v->drops[v->size] = d;
     v->size++;
