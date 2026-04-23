@@ -1,6 +1,6 @@
 CC         = gcc
 CFLAGS     = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L
-TEST_FLAGS = $(CFLAGS) -Wno-unused-parameter -Wno-return-type
+TEST_FLAGS = $(CFLAGS) -Wno-unused-parameter
 
 .DEFAULT_GOAL := rain
 

@@ -97,7 +97,7 @@ void exitCurses();
 int pRand(int min, int max);
 int getNumOfDrops();
 void handleResize(int sig);
-void exitErr(const char *err);
+void exitErr(const char *err) __attribute__((noreturn));
 void usage();
 
 
@@ -278,8 +278,8 @@ void handleResize(int sig)
 void exitErr(const char *err)
 {
     exitCurses();
-    printf("%s", err);
-    exit(0);
+    fprintf(stderr, "%s", err);
+    exit(EXIT_FAILURE);
 }
 
 int getNumOfDrops()
@@ -304,9 +304,9 @@ int getNumOfDrops()
 
 void usage()
 {
-    printf(" Usage: rain\n");
-    printf("No arguments supported yet. It's just rain, after all.\n");
-    printf("Hit 'q' to exit.\n");
+    fprintf(stderr, " Usage: rain\n");
+    fprintf(stderr, "No arguments supported yet. It's just rain, after all.\n");
+    fprintf(stderr, "Hit 'q' to exit.\n");
 }
 
 // wrapper around nanosleep, replacing deprecated usleep func 
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
     if (argc != 1)
     {
         usage();
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     // User KeyEvent
@@ -393,4 +393,5 @@ int main(int argc, char **argv)
     v_delete(&drops);
     exitCurses();
 
+    return 0;
 }
