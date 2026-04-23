@@ -282,12 +282,80 @@ static void config_parse_tests(void)
 static void config_sample_file_tests(void)
 {
     Config saved = cfg;
+    cfg.frame_delay_ms = 1;
+    cfg.quit_key       = '!';
+    cfg.color_mode     = COLOR_MODE_MANUAL;
+
     config_load("test_cfg.conf");
 
-    CHECK(cfg.frame_delay_ms == 40, "config sample: frame_delay_ms from test_cfg.conf");
-    CHECK(cfg.density == 1.0,       "config sample: density from test_cfg.conf");
-    CHECK(cfg.quit_key == 'x',      "config sample: quit_key from test_cfg.conf");
+    CHECK(cfg.frame_delay_ms == 40,         "config sample: frame_delay_ms loaded");
+    CHECK(cfg.quit_key == 'x',              "config sample: quit_key loaded");
+    CHECK(cfg.color_mode == COLOR_MODE_AUTO,"config sample: color_mode loaded");
 
+    cfg = saved;
+}
+
+static void config_hex_parser_tests(void)
+{
+    RgbColor c;
+
+    CHECK(parse_hex_color("#ff0080", &c) == 1
+          && c.r == 0xff && c.g == 0x00 && c.b == 0x80,
+          "parse_hex_color: #rrggbb");
+
+    CHECK(parse_hex_color("aabbcc", &c) == 1
+          && c.r == 0xaa && c.g == 0xbb && c.b == 0xcc,
+          "parse_hex_color: rrggbb without hash");
+
+    CHECK(parse_hex_color("  #A1B2C3  ", &c) == 1
+          && c.r == 0xa1 && c.g == 0xb2 && c.b == 0xc3,
+          "parse_hex_color: surrounding whitespace and uppercase");
+
+    CHECK(parse_hex_color("#zzzzzz", &c) == 0, "parse_hex_color: non-hex rejected");
+    CHECK(parse_hex_color("#abc",    &c) == 0, "parse_hex_color: short form rejected");
+    CHECK(parse_hex_color("",        &c) == 0, "parse_hex_color: empty rejected");
+    CHECK(parse_hex_color("#abcdef00", &c) == 0, "parse_hex_color: trailing data rejected");
+}
+
+static void config_color_fields_tests(void)
+{
+    const char *path = "/tmp/rain_test_config_colors";
+
+    FILE *f = fopen(path, "w");
+    fprintf(f, "color_mode = manual\n");
+    fprintf(f, "color_base = #112233\n");
+    fprintf(f, "colors = #ff0000, #00ff00, #0000ff\n");
+    fclose(f);
+
+    Config saved = cfg;
+    config_load(path);
+
+    CHECK(cfg.color_mode == COLOR_MODE_MANUAL, "config: color_mode manual parsed");
+    CHECK(cfg.color_base.r == 0x11 && cfg.color_base.g == 0x22 && cfg.color_base.b == 0x33,
+          "config: color_base parsed");
+    CHECK(cfg.colors_count == 3, "config: colors list count");
+    CHECK(cfg.colors[0].r == 0xff && cfg.colors[1].g == 0xff && cfg.colors[2].b == 0xff,
+          "config: colors list entries");
+
+    unlink(path);
+    cfg = saved;
+}
+
+static void config_color_mode_auto_tests(void)
+{
+    const char *path = "/tmp/rain_test_config_auto";
+
+    FILE *f = fopen(path, "w");
+    fprintf(f, "color_mode = auto\n");
+    fclose(f);
+
+    Config saved = cfg;
+    cfg.color_mode = COLOR_MODE_MANUAL;
+    config_load(path);
+
+    CHECK(cfg.color_mode == COLOR_MODE_AUTO, "config: color_mode auto parsed");
+
+    unlink(path);
     cfg = saved;
 }
 
@@ -376,6 +444,9 @@ int main(void)
     config_sample_file_tests();
     config_missing_file_tests();
     config_rejects_invalid_values_tests();
+    config_hex_parser_tests();
+    config_color_fields_tests();
+    config_color_mode_auto_tests();
 
     printf("\n%d passed, %d failed\n", passed, failed);
     return failed > 0 ? 1 : 0;

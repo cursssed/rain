@@ -126,13 +126,7 @@ Drop d_create()
         (d.speed < 3) ? (d.shape = '|') : (d.shape = ':');
     }
 
-    int x = d.speed;
-
-    // patented
-    int color = (int) ((0.0416 * (x - 4)
-                               * (x - 3)
-                               * (x - 2) - 4)
-                               * (x - 1) + 255);
+    int color = d.speed;
 
     if (color < 1)
         color = 1;
@@ -241,6 +235,70 @@ Drop *v_getAt(d_Vector *v, int pos)
 //  FUNCTIONS - CURSES
 //
 
+static short nearest_xterm256(RgbColor c)
+{
+    short r_idx = (short)((c.r * 5 + 127) / 255);
+    short g_idx = (short)((c.g * 5 + 127) / 255);
+    short b_idx = (short)((c.b * 5 + 127) / 255);
+    return (short)(16 + r_idx * 36 + g_idx * 6 + b_idx);
+}
+
+static void build_palette(RgbColor *out, int count)
+{
+    if (cfg.color_mode == COLOR_MODE_MANUAL && cfg.colors_count >= count)
+    {
+        for (int i = 0; i < count; i++)
+            out[i] = cfg.colors[i];
+        return;
+    }
+
+    if (cfg.color_mode == COLOR_MODE_MANUAL)
+        fprintf(stderr, "rain: manual colors list has %d entries, need %d; falling back to auto\n",
+                cfg.colors_count, count);
+
+    for (int i = 0; i < count; i++)
+    {
+        double m = (count <= 1) ? 1.0 : 1.0 - 0.25 * i / (double)(count - 1);
+        out[i].r = (unsigned char)(cfg.color_base.r * m);
+        out[i].g = (unsigned char)(cfg.color_base.g * m);
+        out[i].b = (unsigned char)(cfg.color_base.b * m);
+    }
+}
+
+static void apply_palette(void)
+{
+    int count = cfg.speed_max;
+    if (count < 1) count = 1;
+    if (count > MAX_COLORS) count = MAX_COLORS;
+
+    short limit = (short)((count < COLOR_PAIRS - 1) ? count : COLOR_PAIRS - 1);
+
+    RgbColor palette[MAX_COLORS];
+    build_palette(palette, limit);
+
+    int changeable = can_change_color();
+
+    for (short i = 0; i < limit; i++)
+    {
+        if (changeable)
+        {
+            short idx = (short)(i + 1);
+            init_color(idx,
+                       (short)(palette[i].r * 1000 / 255),
+                       (short)(palette[i].g * 1000 / 255),
+                       (short)(palette[i].b * 1000 / 255));
+            init_pair(idx, idx, -1);
+        }
+        else
+        {
+            short nearest = nearest_xterm256(palette[i]);
+            init_pair((short)(i + 1), nearest, -1);
+        }
+    }
+
+    maxColorPair = limit;
+}
+
 void initCurses()
 {
     initscr();
@@ -257,15 +315,7 @@ void initCurses()
     {
         use_default_colors();
         start_color();
-
-        short limit = (COLORS < COLOR_PAIRS - 1)
-                      ? (short) COLORS
-                      : (short) (COLOR_PAIRS - 1);
-
-        for (short i = 0; i < limit; i++)
-            init_pair(i + 1, i, -1);
-
-        maxColorPair = limit;
+        apply_palette();
     }
     else
         exitErr("\n*Terminal emulator lacks capabilities.\n(Can't have colors).\n*");
