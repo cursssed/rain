@@ -41,14 +41,13 @@
 #include <errno.h>  
 #include <unistd.h>
 #include <curses.h>
-#include <signal.h>
 
 
 //
 //  GLOBALS
 //
 
-volatile sig_atomic_t userResized = 0;
+int userResized = 0;
 int slowerDrops = 0;
 short maxColorPair = 0;
 
@@ -97,7 +96,6 @@ void exitCurses();
 
 int pRand(int min, int max);
 int getNumOfDrops();
-void handleResize(int sig);
 void exitErr(const char *err) __attribute__((noreturn));
 void usage();
 
@@ -251,7 +249,6 @@ void initCurses()
         exitErr("\n*Terminal emulator lacks capabilities.\n(Can't hide Cursor).*\n");
 
     timeout(0);
-    signal(SIGWINCH, handleResize);
 
     if (has_colors())
     {
@@ -290,12 +287,6 @@ int pRand(int min, int max)
 {
     max -= 1;
     return min + rand() / (RAND_MAX / (max - min + 1) + 1);
-}
-
-void handleResize(int sig)
-{
-    (void)sig;
-    userResized = 1;
 }
 
 void exitErr(const char *err)
@@ -388,11 +379,16 @@ int main(int argc, char **argv)
 
         if (userResized)
         {
-            // Stabilizing hectic user..
-            mssleep(90);
+            static int lastLines = 0;
+            static int lastCols  = 0;
 
-            dropsTotal = getNumOfDrops();
-            v_resize(&drops, dropsTotal);
+            if (LINES != lastLines || COLS != lastCols)
+            {
+                dropsTotal = getNumOfDrops();
+                v_resize(&drops, dropsTotal);
+                lastLines = LINES;
+                lastCols  = COLS;
+            }
 
             userResized = 0;
         }
