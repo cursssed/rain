@@ -206,6 +206,26 @@ static void d_create_position_tests(void)
     CHECK(ok, "d_create: position within terminal bounds");
 }
 
+static void nearest_xterm256_tests(void)
+{
+    RgbColor black = { 0, 0, 0 };
+    CHECK(nearest_xterm256(black) == 16, "nearest_xterm256: pure black -> 16");
+
+    RgbColor white = { 255, 255, 255 };
+    CHECK(nearest_xterm256(white) == 231, "nearest_xterm256: pure white -> 231");
+
+    RgbColor red = { 255, 0, 0 };
+    CHECK(nearest_xterm256(red) == 196, "nearest_xterm256: pure red -> 196");
+
+    RgbColor gray = { 168, 168, 168 };
+    short idx = nearest_xterm256(gray);
+    CHECK(idx >= 232 && idx <= 255, "nearest_xterm256: near-neutral maps to grayscale ramp");
+
+    RgbColor off_white = { 220, 220, 230 };
+    idx = nearest_xterm256(off_white);
+    CHECK(idx >= 232 && idx <= 255, "nearest_xterm256: default color_base maps to grayscale");
+}
+
 static void d_create_color_range_tests(void)
 {
     COLS = 80; LINES = 24;
@@ -288,9 +308,10 @@ static void config_sample_file_tests(void)
 
     config_load("test_cfg.conf");
 
-    CHECK(cfg.frame_delay_ms == 40,         "config sample: frame_delay_ms loaded");
-    CHECK(cfg.quit_key == 'x',              "config sample: quit_key loaded");
-    CHECK(cfg.color_mode == COLOR_MODE_AUTO,"config sample: color_mode loaded");
+    CHECK(cfg.frame_delay_ms == 40,            "config sample: frame_delay_ms loaded");
+    CHECK(cfg.quit_key == 'x',                 "config sample: quit_key loaded");
+    CHECK(cfg.color_mode == COLOR_MODE_MANUAL, "config sample: color_mode loaded");
+    CHECK(cfg.colors_count == 5,               "config sample: colors list count");
 
     cfg = saved;
 }
@@ -437,6 +458,7 @@ int main(void)
     d_create_fast_tests();
     d_create_slow_tests();
     d_create_position_tests();
+    nearest_xterm256_tests();
     d_create_color_range_tests();
     d_create_color_clamp_tests();
     getNumOfDrops_tests();

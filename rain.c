@@ -237,10 +237,37 @@ Drop *v_getAt(d_Vector *v, int pos)
 
 static short nearest_xterm256(RgbColor c)
 {
-    short r_idx = (short)((c.r * 5 + 127) / 255);
-    short g_idx = (short)((c.g * 5 + 127) / 255);
-    short b_idx = (short)((c.b * 5 + 127) / 255);
-    return (short)(16 + r_idx * 36 + g_idx * 6 + b_idx);
+    static const int cube_levels[6] = { 0, 95, 135, 175, 215, 255 };
+
+    int best_r = 0, best_g = 0, best_b = 0;
+    int min_dr = 1 << 30, min_dg = 1 << 30, min_db = 1 << 30;
+
+    for (int i = 0; i < 6; i++)
+    {
+        int dr = (c.r - cube_levels[i]) * (c.r - cube_levels[i]);
+        int dg = (c.g - cube_levels[i]) * (c.g - cube_levels[i]);
+        int db = (c.b - cube_levels[i]) * (c.b - cube_levels[i]);
+
+        if (dr < min_dr) { min_dr = dr; best_r = i; }
+        if (dg < min_dg) { min_dg = dg; best_g = i; }
+        if (db < min_db) { min_db = db; best_b = i; }
+    }
+
+    short cube_idx  = (short)(16 + best_r * 36 + best_g * 6 + best_b);
+    int   cube_dist = min_dr + min_dg + min_db;
+
+    int gray_avg  = (c.r + c.g + c.b) / 3;
+    int gray_step = (gray_avg - 8 + 5) / 10;
+    if (gray_step < 0)  gray_step = 0;
+    if (gray_step > 23) gray_step = 23;
+
+    int gray_value = 8 + gray_step * 10;
+    int gray_dist  = (c.r - gray_value) * (c.r - gray_value)
+                   + (c.g - gray_value) * (c.g - gray_value)
+                   + (c.b - gray_value) * (c.b - gray_value);
+    short gray_idx = (short)(232 + gray_step);
+
+    return (gray_dist < cube_dist) ? gray_idx : cube_idx;
 }
 
 static void build_palette(RgbColor *out, int count)
@@ -276,25 +303,8 @@ static void apply_palette(void)
     RgbColor palette[MAX_COLORS];
     build_palette(palette, limit);
 
-    int changeable = can_change_color();
-
     for (short i = 0; i < limit; i++)
-    {
-        if (changeable)
-        {
-            short idx = (short)(i + 1);
-            init_color(idx,
-                       (short)(palette[i].r * 1000 / 255),
-                       (short)(palette[i].g * 1000 / 255),
-                       (short)(palette[i].b * 1000 / 255));
-            init_pair(idx, idx, -1);
-        }
-        else
-        {
-            short nearest = nearest_xterm256(palette[i]);
-            init_pair((short)(i + 1), nearest, -1);
-        }
-    }
+        init_pair((short)(i + 1), nearest_xterm256(palette[i]), -1);
 
     maxColorPair = limit;
 }
