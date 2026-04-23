@@ -4,10 +4,10 @@ TEST_FLAGS = $(CFLAGS) -Wno-unused-parameter
 
 .DEFAULT_GOAL := rain
 
-rain: rain.c
-	$(CC) $(CFLAGS) -o rain rain.c -lncurses
+rain: rain.c config.c config.h
+	$(CC) $(CFLAGS) -o rain rain.c config.c -lncurses
 
-test/rain_test: test/test_rain.c test/curses.h
+test/rain_test: test/test_rain.c test/curses.h rain.c config.c config.h
 	$(CC) $(TEST_FLAGS) -I test/ -o test/rain_test test/test_rain.c
 
 test: test/rain_test

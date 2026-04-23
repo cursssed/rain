@@ -37,10 +37,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>  
-#include <errno.h>  
+#include <string.h>
+#include <time.h>
+#include <errno.h>
 #include <unistd.h>
 #include <curses.h>
+
+#include "config.h"
 
 
 //
@@ -309,7 +312,7 @@ int getNumOfDrops()
     }
     else
     {
-        nDrops = (int) (COLS * 1.5);
+        nDrops = (int) (COLS * cfg.density);
         slowerDrops = 0;
     }
 
@@ -321,8 +324,7 @@ int getNumOfDrops()
 
 void usage()
 {
-    fprintf(stderr, " Usage: rain\n");
-    fprintf(stderr, "No arguments supported yet. It's just rain, after all.\n");
+    fprintf(stderr, "Usage: rain [--config <path>]\n");
     fprintf(stderr, "Hit 'q' to exit.\n");
 }
 
@@ -351,13 +353,22 @@ int mssleep(long msec)
 
 int main(int argc, char **argv)
 {
-    (void)argv;
+    const char *config_path = NULL;
 
-    if (argc != 1)
+    for (int i = 1; i < argc; i++)
     {
-        usage();
-        exit(EXIT_FAILURE);
+        if (strcmp(argv[i], "--config") == 0 && i + 1 < argc)
+        {
+            config_path = argv[++i];
+        }
+        else
+        {
+            usage();
+            exit(EXIT_FAILURE);
+        }
     }
+
+    config_load(config_path);
 
     srand((unsigned int) (time(NULL) ^ getpid()));
     initCurses();
@@ -403,10 +414,10 @@ int main(int argc, char **argv)
         refresh();
 
         // Frame Delay
-        mssleep(30);
+        mssleep(cfg.frame_delay_ms);
 
         int ch = wgetch(stdscr);
-        if (ch == 'q')
+        if (ch == cfg.quit_key)
             break;
         if (ch == KEY_RESIZE)
             userResized = 1;

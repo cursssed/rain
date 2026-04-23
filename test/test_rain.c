@@ -3,6 +3,7 @@
 
 #define main rain_main
 #include "../rain.c"
+#include "../config.c"
 #undef main
 
 static int passed = 0;
@@ -245,6 +246,43 @@ static void d_create_color_clamp_tests(void)
     maxColorPair = 0;
 }
 
+static void config_parse_tests(void)
+{
+    const char *path = "/tmp/rain_test_config";
+
+    FILE *f = fopen(path, "w");
+    fprintf(f, "# comment line\n");
+    fprintf(f, "\n");
+    fprintf(f, "frame_delay_ms = 50\n");
+    fprintf(f, "  density =  2.5  \n");
+    fprintf(f, "quit_key=X\n");
+    fprintf(f, "bogus_key = ignored\n");
+    fprintf(f, "malformed line\n");
+    fclose(f);
+
+    Config saved = cfg;
+    config_load(path);
+
+    CHECK(cfg.frame_delay_ms == 50, "config: numeric option parsed");
+    CHECK(cfg.density == 2.5,       "config: float with surrounding whitespace parsed");
+    CHECK(cfg.quit_key == 'X',      "config: char option parsed without spaces");
+
+    unlink(path);
+    cfg = saved;
+}
+
+static void config_missing_file_tests(void)
+{
+    Config saved = cfg;
+    cfg.frame_delay_ms = 42;
+
+    config_load("/tmp/rain_definitely_nonexistent_xyz123");
+
+    CHECK(cfg.frame_delay_ms == 42, "config: missing file leaves values untouched");
+
+    cfg = saved;
+}
+
 static void getNumOfDrops_tests(void)
 {
     LINES = 40; COLS = 120; slowerDrops = 0;
@@ -289,6 +327,8 @@ int main(void)
     d_create_color_range_tests();
     d_create_color_clamp_tests();
     getNumOfDrops_tests();
+    config_parse_tests();
+    config_missing_file_tests();
 
     printf("\n%d passed, %d failed\n", passed, failed);
     return failed > 0 ? 1 : 0;
