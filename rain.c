@@ -246,9 +246,8 @@ void initCurses()
     noecho();
     cbreak();
     keypad(stdscr, 1);
-    curs_set(0);
 
-    if ((curs_set(0)) == 1)
+    if (curs_set(0) == ERR)
         exitErr("\n*Terminal emulator lacks capabilities.\n(Can't hide Cursor).*\n");
 
     timeout(0);
@@ -358,16 +357,15 @@ int mssleep(long msec)
 
 int main(int argc, char **argv)
 {
+    (void)argv;
+
     if (argc != 1)
     {
         usage();
         exit(EXIT_FAILURE);
     }
 
-    // User KeyEvent
-    int key;
-
-    srand((unsigned int) getpid());
+    srand((unsigned int) (time(NULL) ^ getpid()));
     initCurses();
 
     int dropsTotal = getNumOfDrops();
@@ -408,7 +406,7 @@ int main(int argc, char **argv)
         // Frame Delay
         mssleep(30);
 
-        if ((key = wgetch(stdscr)) == 'q')
+        if (wgetch(stdscr) == 'q')
             break;
 
         erase();
