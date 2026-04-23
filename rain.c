@@ -409,8 +409,11 @@ int main(int argc, char **argv)
         // Frame Delay
         mssleep(30);
 
-        if (wgetch(stdscr) == 'q')
+        int ch = wgetch(stdscr);
+        if (ch == 'q')
             break;
+        if (ch == KEY_RESIZE)
+            userResized = 1;
 
         erase();
     }

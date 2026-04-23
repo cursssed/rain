@@ -11,7 +11,8 @@ static WINDOW _stdscr_inst;
 WINDOW *stdscr = &_stdscr_inst;
 
 #define COLOR_PAIR(n) ((int)(n))
-#define ERR (-1)
+#define ERR        (-1)
+#define KEY_RESIZE 0632
 
 static inline void initscr(void)                                        {}
 static inline void noecho(void)                                         {}
