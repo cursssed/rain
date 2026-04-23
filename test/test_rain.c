@@ -176,6 +176,46 @@ static void d_create_position_tests(void)
     CHECK(ok, "d_create: position within terminal bounds");
 }
 
+static void d_create_color_range_tests(void)
+{
+    COLS = 80; LINES = 24;
+    maxColorPair = 0;
+
+    slowerDrops = 0;
+    srand(20);
+    int ok = 1;
+    for (int i = 0; i < 500; i++) {
+        Drop d = d_create();
+        if (d.color < 1) { ok = 0; break; }
+    }
+    CHECK(ok, "d_create: color >= 1 (fast mode)");
+
+    slowerDrops = 1;
+    srand(21);
+    ok = 1;
+    for (int i = 0; i < 500; i++) {
+        Drop d = d_create();
+        if (d.color < 1) { ok = 0; break; }
+    }
+    CHECK(ok, "d_create: color >= 1 (slow mode)");
+    slowerDrops = 0;
+}
+
+static void d_create_color_clamp_tests(void)
+{
+    COLS = 80; LINES = 24;
+    slowerDrops = 0;
+    maxColorPair = 16;
+    srand(22);
+    int ok = 1;
+    for (int i = 0; i < 500; i++) {
+        Drop d = d_create();
+        if (d.color < 1 || d.color > 16) { ok = 0; break; }
+    }
+    CHECK(ok, "d_create: color clamped to [1, maxColorPair]");
+    maxColorPair = 0;
+}
+
 static void handleResize_tests(void)
 {
     userResized = 0;
@@ -216,6 +256,8 @@ int main(void)
     d_create_fast_tests();
     d_create_slow_tests();
     d_create_position_tests();
+    d_create_color_range_tests();
+    d_create_color_clamp_tests();
     getNumOfDrops_tests();
     handleResize_tests();
 

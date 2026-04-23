@@ -50,6 +50,7 @@
 
 volatile sig_atomic_t userResized = 0;
 int slowerDrops = 0;
+short maxColorPair = 0;
 
 typedef struct
 {
@@ -127,10 +128,17 @@ Drop d_create()
     int x = d.speed;
 
     // patented
-    d.color = (int) ((0.0416 * (x - 4)
-                             * (x - 3)
-                             * (x - 2) - 4)
-                             * (x - 1) + 255);
+    int color = (int) ((0.0416 * (x - 4)
+                               * (x - 3)
+                               * (x - 2) - 4)
+                               * (x - 1) + 255);
+
+    if (color < 1)
+        color = 1;
+    if (maxColorPair > 0 && color > maxColorPair)
+        color = maxColorPair;
+
+    d.color = color;
     return d;
 }
 
@@ -241,8 +249,14 @@ void initCurses()
         use_default_colors();
         start_color();
 
-        for (short i = 0; i < COLORS; i++)
+        short limit = (COLORS < COLOR_PAIRS - 1)
+                      ? (short) COLORS
+                      : (short) (COLOR_PAIRS - 1);
+
+        for (short i = 0; i < limit; i++)
             init_pair(i + 1, i, -1);
+
+        maxColorPair = limit;
     }
     else
         exitErr("\n*Terminal emulator lacks capabilities.\n(Can't have colors).\n*");

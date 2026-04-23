@@ -1,9 +1,10 @@
 #ifndef CURSES_H
 #define CURSES_H
 
-int LINES  = 24;
-int COLS   = 80;
-int COLORS = 256;
+int LINES       = 24;
+int COLS        = 80;
+int COLORS      = 256;
+int COLOR_PAIRS = 256;
 
 typedef struct { int _dummy; } WINDOW;
 static WINDOW _stdscr_inst;
