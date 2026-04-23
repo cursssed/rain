@@ -269,6 +269,14 @@ static void getNumOfDrops_tests(void)
     n = getNumOfDrops();
     CHECK(n == (int)(60 * 0.75), "getNumOfDrops: few cols triggers 0.75x cols");
     CHECK(slowerDrops == 1,      "getNumOfDrops: slowerDrops on for few cols");
+
+    LINES = 24; COLS = 0;
+    n = getNumOfDrops();
+    CHECK(n >= 1, "getNumOfDrops: clamps to at least 1 when COLS is 0");
+
+    LINES = 0; COLS = 0;
+    n = getNumOfDrops();
+    CHECK(n >= 1, "getNumOfDrops: clamps to at least 1 when LINES and COLS are 0");
 }
 
 int main(void)

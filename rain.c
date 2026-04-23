@@ -322,6 +322,9 @@ int getNumOfDrops()
         slowerDrops = 0;
     }
 
+    if (nDrops < 1)
+        nDrops = 1;
+
     return nDrops;
 }
 
