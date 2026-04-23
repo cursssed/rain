@@ -396,12 +396,11 @@ int main(int argc, char **argv)
             userResized = 0;
         }
 
-        dropsTotal = getNumOfDrops();
-
         for (int i = 0; i < dropsTotal; i++)
         {
-            d_fall(v_getAt(&drops, i));
-            d_show(v_getAt(&drops, i));
+            Drop *d = v_getAt(&drops, i);
+            d_fall(d);
+            d_show(d);
         }
 
         refresh();
