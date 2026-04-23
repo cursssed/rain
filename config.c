@@ -8,6 +8,10 @@
 Config cfg = {
     .frame_delay_ms = 30,
     .density        = 1.5,
+    .slow_density   = 0.75,
+    .speed_min      = 1,
+    .speed_max      = 5,
+    .slow_speed_max = 2,
     .quit_key       = 'q',
 };
 
@@ -37,6 +41,30 @@ static void apply_option(const char *key, const char *value)
         double v = atof(value);
         if (v > 0.0)
             cfg.density = v;
+    }
+    else if (strcmp(key, "slow_density") == 0)
+    {
+        double v = atof(value);
+        if (v > 0.0)
+            cfg.slow_density = v;
+    }
+    else if (strcmp(key, "speed_min") == 0)
+    {
+        int v = atoi(value);
+        if (v > 0)
+            cfg.speed_min = v;
+    }
+    else if (strcmp(key, "speed_max") == 0)
+    {
+        int v = atoi(value);
+        if (v > 0)
+            cfg.speed_max = v;
+    }
+    else if (strcmp(key, "slow_speed_max") == 0)
+    {
+        int v = atoi(value);
+        if (v > 0)
+            cfg.slow_speed_max = v;
     }
     else if (strcmp(key, "quit_key") == 0)
     {

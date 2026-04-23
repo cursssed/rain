@@ -116,13 +116,13 @@ Drop d_create()
 
     if (slowerDrops)
     {
-        d.speed = pRand(1, 3);
+        d.speed = pRand(cfg.speed_min, cfg.slow_speed_max + 1);
         (d.speed < 2) ? (d.shape = '|') : (d.shape = ':');
     }
 
     else
     {
-        d.speed = pRand(1, 6);
+        d.speed = pRand(cfg.speed_min, cfg.speed_max + 1);
         (d.speed < 3) ? (d.shape = '|') : (d.shape = ':');
     }
 
@@ -305,7 +305,7 @@ int getNumOfDrops()
 
     if ((LINES < 20 && COLS > 100) || (COLS < 100 && LINES < 40))
     {
-        nDrops = (int) (COLS * 0.75);
+        nDrops = (int) (COLS * cfg.slow_density);
 
         // Watch that state..
         slowerDrops = 1;

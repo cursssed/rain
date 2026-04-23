@@ -255,6 +255,10 @@ static void config_parse_tests(void)
     fprintf(f, "\n");
     fprintf(f, "frame_delay_ms = 50\n");
     fprintf(f, "  density =  2.5  \n");
+    fprintf(f, "slow_density = 0.4\n");
+    fprintf(f, "speed_min = 2\n");
+    fprintf(f, "speed_max = 8\n");
+    fprintf(f, "slow_speed_max = 3\n");
     fprintf(f, "quit_key=X\n");
     fprintf(f, "bogus_key = ignored\n");
     fprintf(f, "malformed line\n");
@@ -265,7 +269,48 @@ static void config_parse_tests(void)
 
     CHECK(cfg.frame_delay_ms == 50, "config: numeric option parsed");
     CHECK(cfg.density == 2.5,       "config: float with surrounding whitespace parsed");
+    CHECK(cfg.slow_density == 0.4,  "config: slow_density parsed");
+    CHECK(cfg.speed_min == 2,       "config: speed_min parsed");
+    CHECK(cfg.speed_max == 8,       "config: speed_max parsed");
+    CHECK(cfg.slow_speed_max == 3,  "config: slow_speed_max parsed");
     CHECK(cfg.quit_key == 'X',      "config: char option parsed without spaces");
+
+    unlink(path);
+    cfg = saved;
+}
+
+static void config_sample_file_tests(void)
+{
+    Config saved = cfg;
+    config_load("test_cfg.conf");
+
+    CHECK(cfg.frame_delay_ms == 40, "config sample: frame_delay_ms from test_cfg.conf");
+    CHECK(cfg.density == 1.0,       "config sample: density from test_cfg.conf");
+    CHECK(cfg.quit_key == 'x',      "config sample: quit_key from test_cfg.conf");
+
+    cfg = saved;
+}
+
+static void config_rejects_invalid_values_tests(void)
+{
+    const char *path = "/tmp/rain_test_config_invalid";
+
+    FILE *f = fopen(path, "w");
+    fprintf(f, "frame_delay_ms = -5\n");
+    fprintf(f, "density = 0\n");
+    fprintf(f, "speed_max = 0\n");
+    fclose(f);
+
+    Config saved = cfg;
+    cfg.frame_delay_ms = 30;
+    cfg.density        = 1.5;
+    cfg.speed_max      = 5;
+
+    config_load(path);
+
+    CHECK(cfg.frame_delay_ms == 30, "config: non-positive frame_delay_ms rejected");
+    CHECK(cfg.density == 1.5,       "config: non-positive density rejected");
+    CHECK(cfg.speed_max == 5,       "config: non-positive speed_max rejected");
 
     unlink(path);
     cfg = saved;
@@ -328,7 +373,9 @@ int main(void)
     d_create_color_clamp_tests();
     getNumOfDrops_tests();
     config_parse_tests();
+    config_sample_file_tests();
     config_missing_file_tests();
+    config_rejects_invalid_values_tests();
 
     printf("\n%d passed, %d failed\n", passed, failed);
     return failed > 0 ? 1 : 0;
