@@ -116,20 +116,6 @@ static void vector_grow_on_add_tests(void)
     v_delete(&v);
 }
 
-static void vector_resize_tests(void)
-{
-    COLS = 80; LINES = 24;
-    srand(3);
-    d_Vector v;
-    v_init(&v, 8);
-    for (int i = 0; i < 8; i++)
-        v_add(&v, d_create());
-    v_resize(&v, 16);
-    CHECK(v.size     == 16, "v_resize: fills to new capacity");
-    CHECK(v.capacity == 16, "v_resize: capacity updated");
-    v_delete(&v);
-}
-
 static void d_fall_advance_tests(void)
 {
     COLS = 80; LINES = 40;
@@ -156,14 +142,13 @@ static void d_fall_wrap_tests(void)
     d->h     = LINES - 1;
     d->speed = 1;
     d_fall(d);
-    CHECK(d->h < 10, "d_fall: wraps to top when at screen bottom");
+    CHECK(d->h <= 0 && d->h > -LINES, "d_fall: respawns above visible area");
     v_delete(&v);
 }
 
 static void d_create_fast_tests(void)
 {
     COLS = 80; LINES = 24;
-    slowerDrops = 0;
     srand(10);
     int ok_speed = 1, ok_shape = 1;
     for (int i = 0; i < 500; i++) {
@@ -174,23 +159,6 @@ static void d_create_fast_tests(void)
     }
     CHECK(ok_speed, "d_create (fast): speed in [1,5]");
     CHECK(ok_shape, "d_create (fast): shape matches speed threshold");
-}
-
-static void d_create_slow_tests(void)
-{
-    COLS = 80; LINES = 24;
-    slowerDrops = 1;
-    srand(11);
-    int ok_speed = 1, ok_shape = 1;
-    for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
-        if (d.speed < 1 || d.speed > 2)         ok_speed = 0;
-        if (d.speed < 2  && d.shape != '|')      ok_shape = 0;
-        if (d.speed >= 2 && d.shape != ':')      ok_shape = 0;
-    }
-    CHECK(ok_speed, "d_create (slow): speed in [1,2]");
-    CHECK(ok_shape, "d_create (slow): shape matches speed threshold");
-    slowerDrops = 0;
 }
 
 static void d_create_position_tests(void)
@@ -231,30 +199,18 @@ static void d_create_color_range_tests(void)
     COLS = 80; LINES = 24;
     maxColorPair = 0;
 
-    slowerDrops = 0;
     srand(20);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
         Drop d = d_create();
         if (d.color < 1) { ok = 0; break; }
     }
-    CHECK(ok, "d_create: color >= 1 (fast mode)");
-
-    slowerDrops = 1;
-    srand(21);
-    ok = 1;
-    for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
-        if (d.color < 1) { ok = 0; break; }
-    }
-    CHECK(ok, "d_create: color >= 1 (slow mode)");
-    slowerDrops = 0;
+    CHECK(ok, "d_create: color >= 1");
 }
 
 static void d_create_color_clamp_tests(void)
 {
     COLS = 80; LINES = 24;
-    slowerDrops = 0;
     maxColorPair = 16;
     srand(22);
     int ok = 1;
@@ -275,10 +231,8 @@ static void config_parse_tests(void)
     fprintf(f, "\n");
     fprintf(f, "frame_delay_ms = 50\n");
     fprintf(f, "  density =  2.5  \n");
-    fprintf(f, "slow_density = 0.4\n");
     fprintf(f, "speed_min = 2\n");
     fprintf(f, "speed_max = 8\n");
-    fprintf(f, "slow_speed_max = 3\n");
     fprintf(f, "quit_key=X\n");
     fprintf(f, "bogus_key = ignored\n");
     fprintf(f, "malformed line\n");
@@ -289,10 +243,8 @@ static void config_parse_tests(void)
 
     CHECK(cfg.frame_delay_ms == 50, "config: numeric option parsed");
     CHECK(cfg.density == 2.5,       "config: float with surrounding whitespace parsed");
-    CHECK(cfg.slow_density == 0.4,  "config: slow_density parsed");
     CHECK(cfg.speed_min == 2,       "config: speed_min parsed");
     CHECK(cfg.speed_max == 8,       "config: speed_max parsed");
-    CHECK(cfg.slow_speed_max == 3,  "config: slow_speed_max parsed");
     CHECK(cfg.quit_key == 'X',      "config: char option parsed without spaces");
 
     unlink(path);
@@ -419,20 +371,13 @@ static void config_missing_file_tests(void)
 
 static void getNumOfDrops_tests(void)
 {
-    LINES = 40; COLS = 120; slowerDrops = 0;
+    LINES = 40; COLS = 120;
     int n = getNumOfDrops();
-    CHECK(n == (int)(120 * 1.5), "getNumOfDrops: large terminal uses 1.5x cols");
-    CHECK(slowerDrops == 0,      "getNumOfDrops: slowerDrops off for large terminal");
+    CHECK(n == (int)(120 * 1.5), "getNumOfDrops: uses density * cols");
 
     LINES = 15; COLS = 110;
     n = getNumOfDrops();
-    CHECK(n == (int)(110 * 0.75), "getNumOfDrops: few lines triggers 0.75x cols");
-    CHECK(slowerDrops == 1,       "getNumOfDrops: slowerDrops on for few lines");
-
-    LINES = 30; COLS = 60;
-    n = getNumOfDrops();
-    CHECK(n == (int)(60 * 0.75), "getNumOfDrops: few cols triggers 0.75x cols");
-    CHECK(slowerDrops == 1,      "getNumOfDrops: slowerDrops on for few cols");
+    CHECK(n == (int)(110 * 1.5), "getNumOfDrops: small terminal still uses density * cols");
 
     LINES = 24; COLS = 0;
     n = getNumOfDrops();
@@ -452,11 +397,9 @@ int main(void)
     vector_add_tests();
     vector_get_tests();
     vector_grow_on_add_tests();
-    vector_resize_tests();
     d_fall_advance_tests();
     d_fall_wrap_tests();
     d_create_fast_tests();
-    d_create_slow_tests();
     d_create_position_tests();
     nearest_xterm256_tests();
     d_create_color_range_tests();

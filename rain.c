@@ -51,7 +51,6 @@
 //
 
 int userResized = 0;
-int slowerDrops = 0;
 short maxColorPair = 0;
 
 typedef struct
@@ -90,7 +89,6 @@ void d_show(Drop *d);
 void v_init(d_Vector *v, int cap);
 void v_free(d_Vector *v);
 void v_delete(d_Vector *v);
-void v_resize(d_Vector *v, int newCap);
 void v_add(d_Vector *v, Drop d);
 Drop *v_getAt(d_Vector *v, int pos);
 
@@ -114,17 +112,8 @@ Drop d_create()
     d.w = pRand(0, COLS);
     d.h = pRand(0, LINES);
 
-    if (slowerDrops)
-    {
-        d.speed = pRand(cfg.speed_min, cfg.slow_speed_max + 1);
-        (d.speed < 2) ? (d.shape = '|') : (d.shape = ':');
-    }
-
-    else
-    {
-        d.speed = pRand(cfg.speed_min, cfg.speed_max + 1);
-        (d.speed < 3) ? (d.shape = '|') : (d.shape = ':');
-    }
+    d.speed = pRand(cfg.speed_min, cfg.speed_max + 1);
+    (d.speed < 3) ? (d.shape = '|') : (d.shape = ':');
 
     int color = d.speed;
 
@@ -142,7 +131,7 @@ void d_fall(Drop *d)
     d->h += d->speed;
 
     if (d->h >= LINES-1)
-        d->h = pRand(0, 10);
+        d->h = -pRand(0, LINES);
 }
 
 void d_show(Drop *d)
@@ -190,18 +179,6 @@ void v_free(d_Vector *v)
 void v_delete(d_Vector *v)
 {
     v_free(v);
-}
-
-void v_resize(d_Vector *v, int newCap)
-{
-    d_Vector newVec;
-    v_init(&newVec, newCap);
-
-    for (int i = 0; i < newCap; i++)
-        v_add(&newVec, d_create());
-
-    v_free(v);
-    *v = newVec;
 }
 
 void v_add(d_Vector *v, Drop d)
@@ -361,20 +338,7 @@ void exitErr(const char *err)
 
 int getNumOfDrops()
 {
-    int nDrops = 0;
-
-    if ((LINES < 20 && COLS > 100) || (COLS < 100 && LINES < 40))
-    {
-        nDrops = (int) (COLS * cfg.slow_density);
-
-        // Watch that state..
-        slowerDrops = 1;
-    }
-    else
-    {
-        nDrops = (int) (COLS * cfg.density);
-        slowerDrops = 0;
-    }
+    int nDrops = (int) (COLS * cfg.density);
 
     if (nDrops < 1)
         nDrops = 1;
@@ -455,10 +419,31 @@ int main(int argc, char **argv)
 
             if (LINES != lastLines || COLS != lastCols)
             {
-                dropsTotal = getNumOfDrops();
-                v_resize(&drops, dropsTotal);
-                lastLines = LINES;
-                lastCols  = COLS;
+                int newTotal = getNumOfDrops();
+
+                if (newTotal > drops.size)
+                {
+                    int wStart = (COLS  > lastCols)  ? lastCols  : 0;
+                    int hStart = (LINES > lastLines) ? lastLines : 0;
+
+                    for (int i = drops.size; i < newTotal; i++)
+                    {
+                        Drop d = d_create();
+                        d.w = pRand(wStart, COLS);
+                        d.h = pRand(hStart, LINES);
+                        v_add(&drops, d);
+                    }
+                }
+                else if (newTotal < drops.size)
+                {
+                    drops.size = newTotal;
+                }
+
+                dropsTotal = newTotal;
+                lastLines  = LINES;
+                lastCols   = COLS;
+
+                clearok(stdscr, 1);
             }
 
             userResized = 0;
@@ -467,6 +452,13 @@ int main(int argc, char **argv)
         for (int i = 0; i < dropsTotal; i++)
         {
             Drop *d = v_getAt(&drops, i);
+
+            if (d->w >= COLS)
+            {
+                d->w = pRand(0, COLS);
+                d->h = -pRand(0, LINES);
+            }
+
             d_fall(d);
             d_show(d);
         }

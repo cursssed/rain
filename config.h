@@ -15,10 +15,8 @@ typedef enum {
 typedef struct {
     int       frame_delay_ms;
     double    density;
-    double    slow_density;
     int       speed_min;
     int       speed_max;
-    int       slow_speed_max;
     char      quit_key;
     ColorMode color_mode;
     RgbColor  color_base;

@@ -18,6 +18,7 @@ static inline void initscr(void)                                        {}
 static inline void noecho(void)                                         {}
 static inline void cbreak(void)                                         {}
 static inline int  keypad(WINDOW *w, int b)       { (void)w; (void)b; return 0; }
+static inline int  clearok(WINDOW *w, int b)      { (void)w; (void)b; return 0; }
 static inline int  curs_set(int v)                { (void)v; return 0; }
 static inline void timeout(int d)                 { (void)d; }
 static inline int  has_colors(void)               { return 1; }
