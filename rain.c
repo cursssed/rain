@@ -48,8 +48,8 @@
 //  GLOBALS
 //
 
-int userResized = 0;
-int slowerDrops = 0; 
+volatile sig_atomic_t userResized = 0;
+int slowerDrops = 0;
 
 typedef struct
 {
@@ -271,12 +271,8 @@ int pRand(int min, int max)
 
 void handleResize(int sig)
 {
-    endwin();
-
+    (void)sig;
     userResized = 1;
-
-    refresh();
-    erase();
 }
 
 void exitErr(const char *err)

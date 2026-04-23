@@ -176,6 +176,14 @@ static void d_create_position_tests(void)
     CHECK(ok, "d_create: position within terminal bounds");
 }
 
+static void handleResize_tests(void)
+{
+    userResized = 0;
+    handleResize(28);
+    CHECK(userResized == 1, "handleResize: sets userResized flag");
+    userResized = 0;
+}
+
 static void getNumOfDrops_tests(void)
 {
     LINES = 40; COLS = 120; slowerDrops = 0;
@@ -209,6 +217,7 @@ int main(void)
     d_create_slow_tests();
     d_create_position_tests();
     getNumOfDrops_tests();
+    handleResize_tests();
 
     printf("\n%d passed, %d failed\n", passed, failed);
     return failed > 0 ? 1 : 0;
