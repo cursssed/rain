@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-24.04
+            deps: sudo apt-get update && sudo apt-get install -y libncurses-dev
+
+          - name: linux-aarch64
+            os: ubuntu-24.04-arm
+            deps: sudo apt-get update && sudo apt-get install -y libncurses-dev
+
+          - name: macos-x86_64
+            os: macos-26-intel
+            deps: true
+
+          - name: macos-arm64
+            os: macos-26
+            deps: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        shell: bash
+        run: ${{ matrix.deps }}
+
+      - name: Build
+        run: make
+
+      - name: Test
+        run: make test
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="${GITHUB_REF_NAME}"
+          DIR="rain-${VERSION}-${{ matrix.name }}"
+
+          mkdir -p "$DIR"
+          cp rain README.md LICENSE rain.conf.example "$DIR/"
+
+          tar czf "${DIR}.tar.gz" "$DIR"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rain-${{ github.ref_name }}-${{ matrix.name }}
+          path: rain-${{ github.ref_name }}-${{ matrix.name }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  source:
+    name: Package source
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Package source
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="${GITHUB_REF_NAME}"
+
+          git archive \
+            --format=tar.gz \
+            --prefix="rain-${VERSION}/" \
+            -o "rain-${VERSION}-source.tar.gz" \
+            HEAD
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rain-${{ github.ref_name }}-source
+          path: rain-${{ github.ref_name }}-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-24.04
+
+    needs:
+      - build
+      - source
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd dist
+          sha256sum *.tar.gz > SHA256SUMS
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
+          generate_release_notes: true

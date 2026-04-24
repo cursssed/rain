@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - dev
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-gcc
+            os: ubuntu-24.04
+            deps: sudo apt-get update && sudo apt-get install -y gcc make libncurses-dev
+            cc: gcc
+
+          - name: linux-clang
+            os: ubuntu-24.04
+            deps: sudo apt-get update && sudo apt-get install -y clang make libncurses-dev
+            cc: clang
+
+          - name: macos-clang
+            os: macos-26
+            deps: true
+            cc: clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        shell: bash
+        run: ${{ matrix.deps }}
+
+      - name: Build
+        run: make clean && make
+        env:
+          CC: ${{ matrix.cc }}
+
+      - name: Test
+        run: make test
+        env:
+          CC: ${{ matrix.cc }}
