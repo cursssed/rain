@@ -253,18 +253,33 @@ static void config_parse_tests(void)
 
 static void config_sample_file_tests(void)
 {
+    const char *path = "/tmp/rain_test_sample";
+
+    FILE *f = fopen(path, "w");
+    fprintf(f, "frame_delay_ms = 40\n");
+    fprintf(f, "density = 1.5\n");
+    fprintf(f, "speed_min = 1\n");
+    fprintf(f, "speed_max = 5\n");
+    fprintf(f, "quit_key = x\n");
+    fprintf(f, "color_mode = manual\n");
+    fprintf(f, "colors = #CA81D2, #C472CC, #9E5DA6, #7E4982, #603864\n");
+    fprintf(f, "use_xterm256 = false\n");
+    fclose(f);
+
     Config saved = cfg;
     cfg.frame_delay_ms = 1;
     cfg.quit_key       = '!';
-    cfg.color_mode     = COLOR_MODE_MANUAL;
+    cfg.color_mode     = COLOR_MODE_AUTO;
+    cfg.colors_count   = 0;
 
-    config_load("test_cfg.conf");
+    config_load(path);
 
     CHECK(cfg.frame_delay_ms == 40,            "config sample: frame_delay_ms loaded");
     CHECK(cfg.quit_key == 'x',                 "config sample: quit_key loaded");
     CHECK(cfg.color_mode == COLOR_MODE_MANUAL, "config sample: color_mode loaded");
     CHECK(cfg.colors_count == 5,               "config sample: colors list count");
 
+    unlink(path);
     cfg = saved;
 }
 
