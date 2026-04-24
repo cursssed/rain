@@ -1,0 +1,72 @@
+# rain configuration
+
+
+
+# =============================================================================
+# Colors
+# =============================================================================
+
+# Palette mode:
+#   auto    Generate a gradient from color_base.
+#   manual  Use the explicit colors list below.
+color_mode = manual
+
+# Base color for auto mode.
+# Format: #rrggbb
+# color_base = #ffffff
+
+# Manual color palette.
+#
+# Defining this key implicitly enables:
+#   color_mode = manual
+#
+# The list must contain exactly speed_max colors, brightest first.
+# Format: #rrggbb, #rrggbb, ...
+colors = #ffffff, #949494, #686868, #464646, #393838
+
+# Color backend:
+#   false  Use init_color for exact RGB colors.
+#          Works in ghostty, kitty, wezterm, xterm and alacritty.
+#
+#   true   Quantize colors to the built-in xterm-256 palette.
+#          Use this for terminals that report color-changing support but
+#          ignore custom RGB palette changes, such as konsole or some
+#          SSH/tmux setups.
+# use_xterm256 = false
+
+
+
+# =============================================================================
+# Timing
+# =============================================================================
+
+# Delay between frames, in milliseconds.
+# Lower values make the rain faster.
+frame_delay_ms = 30
+
+
+# =============================================================================
+# Density and speed
+# =============================================================================
+
+# Horizontal drop density, measured as drops per terminal column.
+# density = 1.5
+
+# Drop speed range, measured in rows per frame.
+# speed_min must be less than or equal to speed_max.
+#
+# Drop shape depends on speed:
+#   speed < 3   -> |
+#   speed >= 3  -> :
+speed_min = 1
+speed_max = 5
+
+
+
+# =============================================================================
+# Input
+# =============================================================================
+
+# Quit key. Must be a single character.
+quit_key = q
+
