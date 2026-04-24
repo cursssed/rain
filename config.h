@@ -28,6 +28,7 @@ typedef struct {
 extern Config cfg;
 
 void config_load(const char *explicit_path);
+int  config_init(const char *explicit_path, int force);
 int  parse_hex_color(const char *s, RgbColor *out);
 
 #endif

@@ -362,8 +362,11 @@ int getNumOfDrops()
 
 void usage()
 {
-    fprintf(stderr, "Usage: rain [--config <path>]\n");
-    fprintf(stderr, "Hit 'q' to exit.\n");
+    fprintf(stderr, "Usage: rain [--config <path>] [--init-config [--force]]\n");
+    fprintf(stderr, "  --config <path>   load configuration from <path>\n");
+    fprintf(stderr, "  --init-config     write a documented default config to the\n");
+    fprintf(stderr, "                    standard location (or <path> if --config given)\n");
+    fprintf(stderr, "  --force           overwrite an existing config file\n");
 }
 
 // wrapper around nanosleep, replacing deprecated usleep func 
@@ -392,6 +395,8 @@ int mssleep(long msec)
 int main(int argc, char **argv)
 {
     const char *config_path = NULL;
+    int init_config = 0;
+    int force       = 0;
 
     for (int i = 1; i < argc; i++)
     {
@@ -399,12 +404,23 @@ int main(int argc, char **argv)
         {
             config_path = argv[++i];
         }
+        else if (strcmp(argv[i], "--init-config") == 0)
+        {
+            init_config = 1;
+        }
+        else if (strcmp(argv[i], "--force") == 0)
+        {
+            force = 1;
+        }
         else
         {
             usage();
             exit(EXIT_FAILURE);
         }
     }
+
+    if (init_config)
+        exit(config_init(config_path, force) == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 
     config_load(config_path);
 

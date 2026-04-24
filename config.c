@@ -1,9 +1,13 @@
 #include "config.h"
+#include "config_template.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 Config cfg = {
     .frame_delay_ms = 30,
@@ -227,4 +231,92 @@ void config_load(const char *explicit_path)
         parse_line(line);
 
     fclose(f);
+}
+
+static int mkdir_p(const char *path)
+{
+    char buf[1024];
+    size_t len = strlen(path);
+    if (len == 0 || len >= sizeof(buf))
+        return -1;
+    memcpy(buf, path, len + 1);
+
+    for (char *p = buf + 1; *p; p++)
+    {
+        if (*p != '/')
+            continue;
+        *p = '\0';
+        if (mkdir(buf, 0755) != 0 && errno != EEXIST)
+            return -1;
+        *p = '/';
+    }
+
+    if (mkdir(buf, 0755) != 0 && errno != EEXIST)
+        return -1;
+
+    return 0;
+}
+
+int config_init(const char *explicit_path, int force)
+{
+    char path[1024];
+    const char *target;
+
+    if (explicit_path && explicit_path[0])
+    {
+        target = explicit_path;
+    }
+    else
+    {
+        resolve_default_path(path, sizeof(path));
+        if (!path[0])
+        {
+            fprintf(stderr, "rain: cannot resolve config path (HOME/XDG_CONFIG_HOME unset)\n");
+            return -1;
+        }
+        target = path;
+    }
+
+    if (!force)
+    {
+        FILE *existing = fopen(target, "r");
+        if (existing)
+        {
+            fclose(existing);
+            fprintf(stderr, "rain: config already exists at %s (use --force to overwrite)\n", target);
+            return -1;
+        }
+    }
+
+    char parent[1024];
+    strncpy(parent, target, sizeof(parent) - 1);
+    parent[sizeof(parent) - 1] = '\0';
+    char *slash = strrchr(parent, '/');
+    if (slash && slash != parent)
+    {
+        *slash = '\0';
+        if (mkdir_p(parent) != 0)
+        {
+            fprintf(stderr, "rain: cannot create %s: %s\n", parent, strerror(errno));
+            return -1;
+        }
+    }
+
+    FILE *f = fopen(target, "w");
+    if (!f)
+    {
+        fprintf(stderr, "rain: cannot write %s: %s\n", target, strerror(errno));
+        return -1;
+    }
+
+    if (fwrite(CONFIG_TEMPLATE, 1, CONFIG_TEMPLATE_LEN, f) != CONFIG_TEMPLATE_LEN)
+    {
+        fprintf(stderr, "rain: write error on %s: %s\n", target, strerror(errno));
+        fclose(f);
+        return -1;
+    }
+
+    fclose(f);
+    printf("rain: config written to %s\n", target);
+    return 0;
 }
