@@ -22,6 +22,7 @@ typedef struct {
     RgbColor  color_base;
     RgbColor  colors[MAX_COLORS];
     int       colors_count;
+    int       use_xterm256;
 } Config;
 
 extern Config cfg;

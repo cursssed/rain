@@ -314,6 +314,31 @@ static void config_color_fields_tests(void)
     cfg = saved;
 }
 
+static void config_use_xterm256_tests(void)
+{
+    const char *path = "/tmp/rain_test_config_xterm256";
+
+    FILE *f = fopen(path, "w");
+    fprintf(f, "use_xterm256 = true\n");
+    fclose(f);
+
+    Config saved = cfg;
+    cfg.use_xterm256 = 0;
+    config_load(path);
+    CHECK(cfg.use_xterm256 == 1, "config: use_xterm256 = true parsed");
+
+    f = fopen(path, "w");
+    fprintf(f, "use_xterm256 = false\n");
+    fclose(f);
+
+    cfg.use_xterm256 = 1;
+    config_load(path);
+    CHECK(cfg.use_xterm256 == 0, "config: use_xterm256 = false parsed");
+
+    unlink(path);
+    cfg = saved;
+}
+
 static void config_color_mode_auto_tests(void)
 {
     const char *path = "/tmp/rain_test_config_auto";
@@ -411,6 +436,7 @@ int main(void)
     config_rejects_invalid_values_tests();
     config_hex_parser_tests();
     config_color_fields_tests();
+    config_use_xterm256_tests();
     config_color_mode_auto_tests();
 
     printf("\n%d passed, %d failed\n", passed, failed);

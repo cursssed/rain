@@ -281,7 +281,21 @@ static void apply_palette(void)
     build_palette(palette, limit);
 
     for (short i = 0; i < limit; i++)
-        init_pair((short)(i + 1), nearest_xterm256(palette[i]), -1);
+    {
+        if (cfg.use_xterm256)
+        {
+            init_pair((short)(i + 1), nearest_xterm256(palette[i]), -1);
+        }
+        else
+        {
+            short idx = (short)(16 + i);
+            init_color(idx,
+                       (short)(palette[i].r * 1000 / 255),
+                       (short)(palette[i].g * 1000 / 255),
+                       (short)(palette[i].b * 1000 / 255));
+            init_pair((short)(i + 1), idx, -1);
+        }
+    }
 
     maxColorPair = limit;
 }

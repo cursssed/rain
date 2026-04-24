@@ -14,6 +14,7 @@ Config cfg = {
     .color_mode     = COLOR_MODE_AUTO,
     .color_base     = { 220, 220, 230 },
     .colors_count   = 0,
+    .use_xterm256   = 0,
 };
 
 static int hex_digit(char c)
@@ -141,6 +142,15 @@ static void apply_option(const char *key, const char *value)
             cfg.colors_count = n;
         else
             fprintf(stderr, "rain: invalid colors list: '%s'\n", value);
+    }
+    else if (strcmp(key, "use_xterm256") == 0)
+    {
+        if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0)
+            cfg.use_xterm256 = 1;
+        else if (strcmp(value, "false") == 0 || strcmp(value, "0") == 0)
+            cfg.use_xterm256 = 0;
+        else
+            fprintf(stderr, "rain: invalid use_xterm256 '%s' (use true or false)\n", value);
     }
     else
     {
