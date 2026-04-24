@@ -130,7 +130,7 @@ void d_fall(Drop *d)
 {
     d->h += d->speed;
 
-    if (d->h >= LINES-1)
+    if (d->h >= LINES)
         d->h = -pRand(0, LINES);
 }
 
