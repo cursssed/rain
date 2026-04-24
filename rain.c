@@ -419,6 +419,18 @@ int main(int argc, char **argv)
 
             if (LINES != lastLines || COLS != lastCols)
             {
+                if (COLS < lastCols || LINES < lastLines)
+                {
+                    int w = 0;
+                    for (int r = 0; r < drops.size; r++)
+                    {
+                        Drop *d = &drops.drops[r];
+                        if (d->w < COLS && d->h < LINES)
+                            drops.drops[w++] = *d;
+                    }
+                    drops.size = w;
+                }
+
                 int newTotal = getNumOfDrops();
 
                 if (newTotal > drops.size)
@@ -452,13 +464,6 @@ int main(int argc, char **argv)
         for (int i = 0; i < dropsTotal; i++)
         {
             Drop *d = v_getAt(&drops, i);
-
-            if (d->w >= COLS)
-            {
-                d->w = pRand(0, COLS);
-                d->h = -pRand(0, LINES);
-            }
-
             d_fall(d);
             d_show(d);
         }
