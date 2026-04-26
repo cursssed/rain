@@ -397,6 +397,19 @@ static void config_rejects_invalid_values_tests(void)
     cfg = saved;
 }
 
+static void config_speed_range_tests(void)
+{
+    const char *path = "/tmp/rain_test_speed_swap";
+    FILE *f = fopen(path, "w");
+    fprintf(f, "speed_min = 9\nspeed_max = 2\n");
+    fclose(f);
+    Config saved = cfg;
+    config_load(path);
+    CHECK(cfg.speed_min <= cfg.speed_max, "config: speed range normalized");
+    unlink(path);
+    cfg = saved;
+}
+
 static void config_missing_file_tests(void)
 {
     Config saved = cfg;
@@ -447,6 +460,7 @@ int main(void)
     getNumOfDrops_tests();
     config_parse_tests();
     config_sample_file_tests();
+    config_speed_range_tests();
     config_missing_file_tests();
     config_rejects_invalid_values_tests();
     config_hex_parser_tests();

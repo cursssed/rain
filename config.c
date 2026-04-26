@@ -231,6 +231,13 @@ void config_load(const char *explicit_path)
         parse_line(line);
 
     fclose(f);
+
+    if (cfg.speed_min > cfg.speed_max)
+    {
+        fprintf(stderr, "rain: speed_min (%d) > speed_max (%d), swapping\n",
+                cfg.speed_min, cfg.speed_max);
+        int t = cfg.speed_min; cfg.speed_min = cfg.speed_max; cfg.speed_max = t;
+    }
 }
 
 static int mkdir_p(const char *path)
