@@ -129,20 +129,17 @@ void d_show(Drop *d)
 
 void v_init(d_Vector *v, int cap)
 {
-    if (cap > 0 && v != 0)
-    {
-        v->drops = (Drop *) malloc(sizeof(Drop) * cap);
+    v->size     = 0;
+    v->capacity = 0;
+    v->drops    = NULL;
 
-        if (v->drops != 0)
-        {
-            v->size = 0;
-            v->capacity = cap;
-        }
-        else
-            exitErr("\n*DROP ARRAY IS >NULL<*\n");
+    if (cap > 0)
+    {
+        v->drops = malloc(sizeof(Drop) * (size_t)cap);
+        if (!v->drops)
+            exitErr("\n*alloc failed*\n");
+        v->capacity = cap;
     }
-    else
-        exitErr("\n*VECTOR INIT FAILED*\n");
 }
 
 void v_free(d_Vector *v)

@@ -60,6 +60,21 @@ static void vector_free_tests(void)
     CHECK(v.drops    == NULL, "v_free: drops pointer nulled");
 }
 
+static void vector_init_zero_cap_tests(void)
+{
+    d_Vector v;
+    v_init(&v, 0);
+    CHECK(v.size     == 0,    "v_init cap=0: size is 0");
+    CHECK(v.capacity == 0,    "v_init cap=0: capacity is 0");
+    CHECK(v.drops    == NULL, "v_init cap=0: drops is NULL");
+
+    Drop d = {0};
+    d.speed = 1; d.color = 1; d.shape = '|';
+    v_add(&v, d);
+    CHECK(v.size == 1, "v_init cap=0: v_add grows from empty");
+    v_free(&v);
+}
+
 static void vector_add_tests(void)
 {
     COLS = 80; LINES = 24;
@@ -443,6 +458,7 @@ int main(void)
     mssleep_tests();
     vector_init_tests();
     vector_free_tests();
+    vector_init_zero_cap_tests();
     vector_add_tests();
     vector_get_tests();
     vector_grow_on_add_tests();
