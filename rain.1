@@ -1,0 +1,226 @@
+.TH RAIN 1 "April 2026" "rain 0.2.0" "User Commands"
+.SH NAME
+rain \- terminal ASCII rain animation
+.SH SYNOPSIS
+.B rain
+.RB [ \-\-config
+.IR path ]
+.RB [ \-\-init\-config
+.RB [ \-\-force ]]
+.RB [ \-\-help | \-h ]
+.RB [ \-\-version | \-V ]
+.SH DESCRIPTION
+.B rain
+draws an ASCII rain animation in the terminal using ncurses.
+The animation runs continuously until the configured quit key is
+pressed and survives terminal resize without flicker.
+.PP
+With no options the program loads its configuration from the first
+available source (see
+.BR CONFIGURATION )
+and starts the animation. If no configuration file is found,
+built-in defaults are used.
+.SH OPTIONS
+.TP
+.BI \-\-config " path"
+Load configuration from
+.IR path
+instead of searching the default locations. A missing or
+unreadable file is silently ignored and built-in defaults are used.
+.TP
+.B \-\-init\-config
+Write a starter configuration file to the default location, or to
+.I path
+if combined with
+.BR \-\-config .
+By default refuses to overwrite an existing file.
+.TP
+.B \-\-force
+Allow
+.B \-\-init\-config
+to overwrite an existing file. Has no effect on its own.
+.TP
+.BR \-\-help ", " \-h
+Print a short help message on standard output and exit.
+.TP
+.BR \-\-version ", " \-V
+Print the program version on standard output and exit.
+.SH KEYS
+While the animation is running:
+.TP
+.B q
+Quit. Configurable through the
+.B quit_key
+option (see
+.BR CONFIGURATION ).
+.SH CONFIGURATION
+.B rain
+loads configuration from the first available source, in this order:
+.IP 1. 4
+The path passed to
+.BR \-\-config .
+.IP 2. 4
+.IR $XDG_CONFIG_HOME/rain/config .
+.IP 3. 4
+.IR $HOME/.config/rain/config .
+.PP
+The configuration format is one
+.IR key " = " value
+pair per line. Lines starting with
+.B #
+and blank lines are ignored. Unknown keys and malformed lines emit
+a warning on standard error and are otherwise skipped.
+.PP
+All keys are optional. Run
+.B rain \-\-init\-config
+to drop an annotated starter file at the default location.
+.SS Available keys
+.TP
+.B frame_delay_ms
+Delay between frames, in milliseconds. Lower values produce a
+faster fall. Must be positive. Default:
+.BR 40 .
+.TP
+.B density
+Drop density, expressed as drops per terminal column. Must be
+positive. Default:
+.BR 0.5 .
+.TP
+.B speed_min
+Minimum drop speed in rows per frame. Must be positive. Default:
+.BR 1 .
+.TP
+.B speed_max
+Maximum drop speed in rows per frame. Must be positive. Default:
+.BR 5 .
+If
+.B speed_min
+exceeds
+.B speed_max
+the values are swapped and a warning is printed.
+.TP
+.B quit_key
+Single-character key that terminates the animation. Default:
+.BR q .
+.TP
+.B color_mode
+Selects the palette source. Either
+.B auto
+(generate a gradient by darkening
+.BR color_base )
+or
+.B manual
+(use the explicit
+.B colors
+list). Default:
+.BR manual .
+.TP
+.B color_base
+Base color for
+.BR "color_mode = auto" ,
+in
+.B #rrggbb
+form. Default:
+.BR #ffffff .
+.TP
+.B colors
+Comma-separated list of colors in
+.B #rrggbb
+form, brightest first. Should contain
+.B speed_max
+entries; if it does not match, the program falls back to
+.BR "color_mode = auto" .
+Setting this key implies
+.BR "color_mode = manual" .
+Default: a 5-step grayscale palette.
+.TP
+.B use_xterm256
+When
+.BR true ,
+quantize colors to the built-in xterm-256 palette instead of
+requesting exact RGB through
+.BR init_color (3X).
+Useful in terminals that advertise color-changing capability but
+ignore the actual RGB values, such as some konsole, SSH and tmux
+setups. Default:
+.BR false .
+.SH COLORS
+By default
+.B rain
+asks the terminal to install exact RGB colors via
+.BR init_color (3X).
+This gives the highest palette fidelity and works in terminals
+including ghostty, kitty, wezterm, xterm and alacritty.
+.PP
+Some terminals report support for changing colors but ignore the
+actual RGB values written. The typical symptom is drops appearing
+in unexpected ANSI colors, often blue-ish, instead of the configured
+palette. Setting
+.B use_xterm256 = true
+maps colors onto the fixed xterm-256 cube and grayscale ramp,
+avoiding palette mutation at the cost of slightly lower fidelity
+for dim or low-chroma colors.
+.SH EXIT STATUS
+.TP
+.B 0
+Successful run or
+.B \-\-init\-config
+wrote the starter configuration.
+.TP
+.B 1
+Invalid command-line argument,
+.B \-\-init\-config
+refused to overwrite an existing file (without
+.BR \-\-force ),
+or the terminal lacks the capabilities required by the program
+(no color support, cannot hide the cursor).
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/rain/config
+Primary default configuration path, used when
+.B XDG_CONFIG_HOME
+is set.
+.TP
+.I $HOME/.config/rain/config
+Fallback default configuration path.
+.TP
+.I PREFIX/share/doc/rain/rain.conf.example
+Annotated example configuration installed by
+.BR "make install" .
+.SH EXAMPLES
+Run with built-in defaults:
+.PP
+.RS 4
+.EX
+rain
+.EE
+.RE
+.PP
+Write a starter configuration to the default location:
+.PP
+.RS 4
+.EX
+rain \-\-init\-config
+.EE
+.RE
+.PP
+Replace an existing configuration file:
+.PP
+.RS 4
+.EX
+rain \-\-init\-config \-\-force
+.EE
+.RE
+.PP
+Run with a configuration file from an explicit path:
+.PP
+.RS 4
+.EX
+rain \-\-config ./my-rain.conf
+.EE
+.RE
+.SH SEE ALSO
+.BR ncurses (3X),
+.BR init_color (3X)
+.SH AUTHORS
+Originally written by Nik in July 2017 and subsequently extended.

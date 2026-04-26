@@ -10,14 +10,21 @@
 #include <sys/types.h>
 
 Config cfg = {
-    .frame_delay_ms = 30,
-    .density        = 1.5,
+    .frame_delay_ms = 40,
+    .density        = 0.5,
     .speed_min      = 1,
     .speed_max      = 5,
     .quit_key       = 'q',
-    .color_mode     = COLOR_MODE_AUTO,
-    .color_base     = { 220, 220, 230 },
-    .colors_count   = 0,
+    .color_mode     = COLOR_MODE_MANUAL,
+    .color_base     = { 255, 255, 255 },
+    .colors         = {
+        { 255, 255, 255 },
+        { 148, 148, 148 },
+        { 104, 104, 104 },
+        {  70,  70,  70 },
+        {  57,  56,  56 },
+    },
+    .colors_count   = 5,
     .use_xterm256   = 0,
 };
 
@@ -143,7 +150,10 @@ static void apply_option(const char *key, const char *value)
     {
         int n = parse_colors_list(value, cfg.colors, MAX_COLORS);
         if (n > 0)
+        {
             cfg.colors_count = n;
+            cfg.color_mode   = COLOR_MODE_MANUAL;
+        }
         else
             fprintf(stderr, "rain: invalid colors list: '%s'\n", value);
     }
@@ -231,6 +241,17 @@ void config_load(const char *explicit_path)
         parse_line(line);
 
     fclose(f);
+
+    if (cfg.speed_min > cfg.speed_max)
+    {
+        fprintf(stderr, "rain: speed_min (%d) > speed_max (%d), swapping\n",
+                cfg.speed_min, cfg.speed_max);
+        int t = cfg.speed_min; cfg.speed_min = cfg.speed_max; cfg.speed_max = t;
+    }
+
+    if (cfg.color_mode == COLOR_MODE_MANUAL && cfg.colors_count < cfg.speed_max)
+        fprintf(stderr, "rain: manual palette has %d entries, need %d; falling back to auto\n",
+                cfg.colors_count, cfg.speed_max);
 }
 
 static int mkdir_p(const char *path)

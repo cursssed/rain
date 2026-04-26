@@ -1,10 +1,14 @@
-CC         = gcc
-CFLAGS     = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L
-TEST_FLAGS = $(CFLAGS) -Wno-unused-parameter
+CC          = gcc
+VERSION     ?= 0.2.0
+CFLAGS      = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -O2 -DRAIN_VERSION=\"$(VERSION)\"
+LDLIBS      = -lncurses
+TEST_FLAGS  = $(CFLAGS) -Wno-unused-parameter
+BENCH_FLAGS = $(CFLAGS) -Wno-unused-parameter
 
 PREFIX    ?= /usr/local
 BINDIR    ?= $(PREFIX)/bin
 DOCDIR    ?= $(PREFIX)/share/doc/rain
+MANDIR    ?= $(PREFIX)/share/man/man1
 
 .DEFAULT_GOAL := rain
 
@@ -12,7 +16,7 @@ config_template.h: rain.conf.example gen_template.sh
 	./gen_template.sh rain.conf.example > $@
 
 rain: rain.c config.c config.h config_template.h
-	$(CC) $(CFLAGS) -o rain rain.c config.c -lncurses
+	$(CC) $(CFLAGS) -o rain rain.c config.c $(LDLIBS)
 
 test/rain_test: test/test_rain.c test/curses.h rain.c config.c config.h config_template.h
 	$(CC) $(TEST_FLAGS) -I test/ -I . -o test/rain_test test/test_rain.c
@@ -20,12 +24,19 @@ test/rain_test: test/test_rain.c test/curses.h rain.c config.c config.h config_t
 test: test/rain_test
 	./test/rain_test
 
+bench/bench_frame: bench/bench_frame.c bench/curses.h rain.c config.c config.h config_template.h
+	$(CC) $(BENCH_FLAGS) -I bench/ -I . -o bench/bench_frame bench/bench_frame.c
+
+bench: bench/bench_frame
+	./bench/bench_frame
+
 install: rain
 	install -Dm755 rain $(DESTDIR)$(BINDIR)/rain
+	install -Dm644 rain.1 $(DESTDIR)$(MANDIR)/rain.1
 	install -Dm644 rain.conf.example $(DESTDIR)$(DOCDIR)/rain.conf.example
 	install -Dm644 LICENSE $(DESTDIR)$(PREFIX)/share/licenses/rain/LICENSE
 
 clean:
-	rm -f rain test/rain_test config_template.h
+	rm -f rain test/rain_test bench/bench_frame config_template.h
 
-.PHONY: rain test clean install
+.PHONY: rain test bench clean install

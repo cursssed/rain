@@ -1,57 +1,18 @@
-/*
-
-                                 000      00
-                           0000000   0000
-              0      00  00000000000000000
-            0000 0  000000000000000000000000       0
-         000000000000000000000000000000000000000 000
-        0000000000000000000000000000000000000000000000
-    000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000
-            C
-                O M        |
-                    F          |
-                 Y                         |         |
-            |                R  A
-                                  I N
-                       I N   |
-              |                                    |
-        |                            Y O
-                |                   U        R
-                   |            T E
-
-                                     R   |   |
-                         |            M
-                               I N
-                                        AL
-
-
-    Although this was a purely fun-motivated project I
-    challenged myself to write this code clean & leak-free.
-
-    If you find bugs or leaks feel free to contact me or fork
-    this. That would be awesome.
-
-    @ Nik, 07.2017
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <signal.h>
 #include <unistd.h>
 #include <curses.h>
 
 #include "config.h"
 
+#ifndef RAIN_VERSION
+#define RAIN_VERSION "unknown"
+#endif
 
-//
-//  GLOBALS
-//
-
-int userResized = 0;
-short maxColorPair = 0;
 
 typedef struct
 {
@@ -62,13 +23,6 @@ typedef struct
     char shape;
 } Drop;
 
-/**
- * Since we want the total number of drops to
- * be terminal-size dependent we need a dynamic/
- * resizeable data structure containing an array of
- * drops.
- */
-
 typedef struct
 {
     Drop *drops;
@@ -78,34 +32,84 @@ typedef struct
 } d_Vector;
 
 
-//
-//  PROTOTYPES
-//
+int pRand(int min, int max)
+{
+    max -= 1;
+    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+}
 
-Drop d_create();
-void d_fall(Drop *d);
-void d_show(Drop *d);
+void exitCurses()
+{
+    static int done = 0;
+    if (done) return;
+    done = 1;
+    curs_set(1);
+    clear();
+    refresh();
+    resetty();
+    endwin();
+}
 
-void v_init(d_Vector *v, int cap);
-void v_free(d_Vector *v);
-void v_delete(d_Vector *v);
-void v_add(d_Vector *v, Drop d);
-Drop *v_getAt(d_Vector *v, int pos);
+static void on_signal(int sig) { (void)sig; exit(0); }
 
-void initCurses();
-void exitCurses();
-
-int pRand(int min, int max);
-int getNumOfDrops();
 void exitErr(const char *err) __attribute__((noreturn));
-void usage();
+void exitErr(const char *err)
+{
+    exitCurses();
+    fprintf(stderr, "%s", err);
+    exit(EXIT_FAILURE);
+}
 
+int mssleep(long msec)
+{
+    struct timespec ts;
+    int res;
 
-//
-//  FUNCTIONS - DROP
-//
+    if (msec < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
 
-Drop d_create()
+    ts.tv_sec  = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res && errno == EINTR);
+
+    return res;
+}
+
+int getNumOfDrops()
+{
+    int nDrops = (int) (COLS * cfg.density);
+
+    if (nDrops < 1)
+        nDrops = 1;
+
+    return nDrops;
+}
+
+static void usage(FILE *out)
+{
+    fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]] [--help] [--version]\n");
+    fprintf(out, "  --config <path>   load configuration from <path>\n");
+    fprintf(out, "  --init-config     write a starter config to the standard\n");
+    fprintf(out, "                    location (or <path> if --config given)\n");
+    fprintf(out, "  --force           overwrite an existing config file\n");
+    fprintf(out, "  --help, -h        show this help and exit\n");
+    fprintf(out, "  --version, -V     show version and exit\n");
+    fprintf(out, "\n");
+    fprintf(out, "Config search order:\n");
+    fprintf(out, "  --config <path>\n");
+    fprintf(out, "  $XDG_CONFIG_HOME/rain/config\n");
+    fprintf(out, "  $HOME/.config/rain/config\n");
+    fprintf(out, "\n");
+    fprintf(out, "Press 'q' to quit (configurable via quit_key in config).\n");
+}
+
+Drop d_create(short max_pair)
 {
     Drop d;
 
@@ -113,14 +117,14 @@ Drop d_create()
     d.h = pRand(0, LINES);
 
     d.speed = pRand(cfg.speed_min, cfg.speed_max + 1);
-    (d.speed < 3) ? (d.shape = '|') : (d.shape = ':');
+    d.shape = (d.speed < 3) ? '|' : ':';
 
     int color = d.speed;
 
     if (color < 1)
         color = 1;
-    if (maxColorPair > 0 && color > maxColorPair)
-        color = maxColorPair;
+    if (max_pair > 0 && color > max_pair)
+        color = max_pair;
 
     d.color = color;
     return d;
@@ -134,51 +138,39 @@ void d_fall(Drop *d)
         d->h = -pRand(0, LINES);
 }
 
-void d_show(Drop *d)
+static void d_show(Drop *d)
 {
-    attron(COLOR_PAIR(d->color));
-    mvaddch(d->h, d->w, d->shape);
-    attroff(COLOR_PAIR(d->color));
+    if (d->h < 0)
+        return;
+    mvaddch(d->h, d->w, (chtype)d->shape | COLOR_PAIR(d->color));
 }
 
 
-//
-//  FUNCTIONS - VECTOR
-//
-
 void v_init(d_Vector *v, int cap)
 {
-    if (cap > 0 && v != 0)
-    {
-        v->drops = (Drop *) malloc(sizeof(Drop) * cap);
+    v->size     = 0;
+    v->capacity = 0;
+    v->drops    = NULL;
 
-        if (v->drops != 0)
-        {
-            v->size = 0;
-            v->capacity = cap;
-        }
-        else
-            exitErr("\n*DROP ARRAY IS >NULL<*\n");
+    if (cap > 0)
+    {
+        v->drops = malloc(sizeof(*v->drops) * (size_t)cap);
+        if (!v->drops)
+            exitErr("\n*alloc failed*\n");
+        v->capacity = cap;
     }
-    else
-        exitErr("\n*VECTOR INIT FAILED*\n");
 }
 
 void v_free(d_Vector *v)
 {
-    if(v->drops != 0)
+    if (v->drops != NULL)
     {
         free(v->drops);
-        v->drops = 0;
+        v->drops = NULL;
     }
 
     v->size = 0;
     v->capacity = 0;
-}
-
-void v_delete(d_Vector *v)
-{
-    v_free(v);
 }
 
 void v_add(d_Vector *v, Drop d)
@@ -186,9 +178,9 @@ void v_add(d_Vector *v, Drop d)
     if (v->size >= v->capacity)
     {
         int newCap = (v->capacity > 0) ? v->capacity * 2 : 1;
-        Drop *newDrops = realloc(v->drops, sizeof(Drop) * newCap);
+        Drop *newDrops = realloc(v->drops, sizeof(*v->drops) * (size_t)newCap);
 
-        if (newDrops == 0)
+        if (newDrops == NULL)
             exitErr("\n*REALLOC FAILED*\n");
 
         v->drops    = newDrops;
@@ -199,18 +191,6 @@ void v_add(d_Vector *v, Drop d)
     v->size++;
 }
 
-Drop *v_getAt(d_Vector *v, int pos)
-{
-    if ((pos < v->size) && (pos >= 0))
-        return &(v->drops[pos]);
-
-    exitErr("\n*BAD ACCESS*\n");
-}
-
-
-//
-//  FUNCTIONS - CURSES
-//
 
 static short nearest_xterm256(RgbColor c)
 {
@@ -256,10 +236,6 @@ static void build_palette(RgbColor *out, int count)
         return;
     }
 
-    if (cfg.color_mode == COLOR_MODE_MANUAL)
-        fprintf(stderr, "rain: manual colors list has %d entries, need %d; falling back to auto\n",
-                cfg.colors_count, count);
-
     for (int i = 0; i < count; i++)
     {
         double m = (count <= 1) ? 1.0 : 1.0 - 0.25 * i / (double)(count - 1);
@@ -269,7 +245,7 @@ static void build_palette(RgbColor *out, int count)
     }
 }
 
-static void apply_palette(void)
+static short apply_palette(void)
 {
     int count = cfg.speed_max;
     if (count < 1) count = 1;
@@ -297,12 +273,15 @@ static void apply_palette(void)
         }
     }
 
-    maxColorPair = limit;
+    return limit;
 }
 
-void initCurses()
+short initCurses()
 {
     initscr();
+    atexit(exitCurses);
+    signal(SIGINT,  on_signal);
+    signal(SIGTERM, on_signal);
     noecho();
     cbreak();
     keypad(stdscr, 1);
@@ -316,81 +295,56 @@ void initCurses()
     {
         use_default_colors();
         start_color();
-        apply_palette();
+        return apply_palette();
     }
-    else
-        exitErr("\n*Terminal emulator lacks capabilities.\n(Can't have colors).\n*");
 
-}
-
-void exitCurses()
-{
-    curs_set(1);
-    clear();
-    refresh();
-    resetty();
-    endwin();
+    exitErr("\n*Terminal emulator lacks capabilities.\n(Can't have colors).\n*");
 }
 
 
-//
-//  UTILS
-//
-
-int pRand(int min, int max)
+static void handle_resize(d_Vector *drops, int *dropsTotal, int *lastLines, int *lastCols, short max_pair)
 {
-    max -= 1;
-    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
-}
+    if (LINES == *lastLines && COLS == *lastCols)
+        return;
 
-void exitErr(const char *err)
-{
-    exitCurses();
-    fprintf(stderr, "%s", err);
-    exit(EXIT_FAILURE);
-}
-
-int getNumOfDrops()
-{
-    int nDrops = (int) (COLS * cfg.density);
-
-    if (nDrops < 1)
-        nDrops = 1;
-
-    return nDrops;
-}
-
-void usage()
-{
-    fprintf(stderr, "Usage: rain [--config <path>] [--init-config [--force]]\n");
-    fprintf(stderr, "  --config <path>   load configuration from <path>\n");
-    fprintf(stderr, "  --init-config     write a documented default config to the\n");
-    fprintf(stderr, "                    standard location (or <path> if --config given)\n");
-    fprintf(stderr, "  --force           overwrite an existing config file\n");
-}
-
-// wrapper around nanosleep, replacing deprecated usleep func 
-int mssleep(long msec)
-{
-    struct timespec ts;
-    int res;
-
-    if (msec < 0)
+    if (COLS < *lastCols || LINES < *lastLines)
     {
-        errno = EINVAL;
-        return -1;
+        int w = 0;
+        for (int r = 0; r < drops->size; r++)
+        {
+            Drop *d = &drops->drops[r];
+            if (d->w < COLS && d->h < LINES)
+                drops->drops[w++] = *d;
+        }
+        drops->size = w;
     }
 
-    ts.tv_sec  = msec / 1000;
-    ts.tv_nsec = (msec % 1000) * 1000000;
+    int newTotal = getNumOfDrops();
 
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res && errno == EINTR);
+    if (newTotal > drops->size)
+    {
+        int wStart = (COLS  > *lastCols)  ? *lastCols  : 0;
+        int hStart = (LINES > *lastLines) ? *lastLines : 0;
 
-    return res;
+        for (int i = drops->size; i < newTotal; i++)
+        {
+            Drop d = d_create(max_pair);
+            d.w = pRand(wStart, COLS);
+            d.h = pRand(hStart, LINES);
+            v_add(drops, d);
+        }
+    }
+    else if (newTotal < drops->size)
+    {
+        drops->size = newTotal;
+    }
+
+    *dropsTotal = newTotal;
+    *lastLines  = LINES;
+    *lastCols   = COLS;
+
+    clearok(stdscr, 1);
 }
-
 
 int main(int argc, char **argv)
 {
@@ -412,11 +366,27 @@ int main(int argc, char **argv)
         {
             force = 1;
         }
+        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+        {
+            usage(stdout);
+            exit(EXIT_SUCCESS);
+        }
+        else if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-V") == 0)
+        {
+            printf("rain %s\n", RAIN_VERSION);
+            exit(EXIT_SUCCESS);
+        }
         else
         {
-            usage();
+            usage(stderr);
             exit(EXIT_FAILURE);
         }
+    }
+
+    if (force && !init_config)
+    {
+        fprintf(stderr, "rain: --force only makes sense with --init-config\n");
+        exit(EXIT_FAILURE);
     }
 
     if (init_config)
@@ -425,96 +395,41 @@ int main(int argc, char **argv)
     config_load(config_path);
 
     srand((unsigned int) (time(NULL) ^ getpid()));
-    initCurses();
+    short max_pair = initCurses();
 
     int dropsTotal = getNumOfDrops();
     d_Vector drops;
     v_init(&drops, dropsTotal);
 
     for (int i = 0; i < dropsTotal; i++)
-        v_add(&drops, d_create());
+        v_add(&drops, d_create(max_pair));
 
-
-    //
-    //  DRAW-LOOP
-    //
+    int lastLines = 0;
+    int lastCols  = 0;
 
     while (1)
     {
-
-        if (userResized)
+        for (int i = 0; i < drops.size; i++)
         {
-            static int lastLines = 0;
-            static int lastCols  = 0;
-
-            if (LINES != lastLines || COLS != lastCols)
-            {
-                if (COLS < lastCols || LINES < lastLines)
-                {
-                    int w = 0;
-                    for (int r = 0; r < drops.size; r++)
-                    {
-                        Drop *d = &drops.drops[r];
-                        if (d->w < COLS && d->h < LINES)
-                            drops.drops[w++] = *d;
-                    }
-                    drops.size = w;
-                }
-
-                int newTotal = getNumOfDrops();
-
-                if (newTotal > drops.size)
-                {
-                    int wStart = (COLS  > lastCols)  ? lastCols  : 0;
-                    int hStart = (LINES > lastLines) ? lastLines : 0;
-
-                    for (int i = drops.size; i < newTotal; i++)
-                    {
-                        Drop d = d_create();
-                        d.w = pRand(wStart, COLS);
-                        d.h = pRand(hStart, LINES);
-                        v_add(&drops, d);
-                    }
-                }
-                else if (newTotal < drops.size)
-                {
-                    drops.size = newTotal;
-                }
-
-                dropsTotal = newTotal;
-                lastLines  = LINES;
-                lastCols   = COLS;
-
-                clearok(stdscr, 1);
-            }
-
-            userResized = 0;
-        }
-
-        for (int i = 0; i < dropsTotal; i++)
-        {
-            Drop *d = v_getAt(&drops, i);
+            Drop *d = &drops.drops[i];
             d_fall(d);
             d_show(d);
         }
 
         refresh();
 
-        // Frame Delay
         mssleep(cfg.frame_delay_ms);
 
         int ch = wgetch(stdscr);
         if (ch == cfg.quit_key)
             break;
         if (ch == KEY_RESIZE)
-            userResized = 1;
+            handle_resize(&drops, &dropsTotal, &lastLines, &lastCols, max_pair);
 
         erase();
     }
 
-    // Free pointers & exit gracefully
-    v_delete(&drops);
-    exitCurses();
+    v_free(&drops);
 
     return 0;
 }

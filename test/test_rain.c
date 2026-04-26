@@ -6,6 +6,13 @@
 #include "../config.c"
 #undef main
 
+static Drop *v_getAt(d_Vector *v, int pos)
+{
+    if (pos >= 0 && pos < v->size)
+        return &v->drops[pos];
+    return NULL;
+}
+
 static int passed = 0;
 static int failed = 0;
 
@@ -31,6 +38,8 @@ static void pRand_tests(void)
         if (v < 5 || v > 14) { ok = 0; break; }
     }
     CHECK(ok, "pRand [5,15): all samples within bounds");
+
+    CHECK(pRand(5, 6) == 5, "pRand: max excluded (single-value range)");
 }
 
 static void mssleep_tests(void)
@@ -60,6 +69,21 @@ static void vector_free_tests(void)
     CHECK(v.drops    == NULL, "v_free: drops pointer nulled");
 }
 
+static void vector_init_zero_cap_tests(void)
+{
+    d_Vector v;
+    v_init(&v, 0);
+    CHECK(v.size     == 0,    "v_init cap=0: size is 0");
+    CHECK(v.capacity == 0,    "v_init cap=0: capacity is 0");
+    CHECK(v.drops    == NULL, "v_init cap=0: drops is NULL");
+
+    Drop d = {0};
+    d.speed = 1; d.color = 1; d.shape = '|';
+    v_add(&v, d);
+    CHECK(v.size == 1, "v_init cap=0: v_add grows from empty");
+    v_free(&v);
+}
+
 static void vector_add_tests(void)
 {
     COLS = 80; LINES = 24;
@@ -67,9 +91,9 @@ static void vector_add_tests(void)
     d_Vector v;
     v_init(&v, 16);
     for (int i = 0; i < 10; i++)
-        v_add(&v, d_create());
+        v_add(&v, d_create(0));
     CHECK(v.size == 10, "v_add: size increments on each add");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void vector_get_tests(void)
@@ -78,13 +102,13 @@ static void vector_get_tests(void)
     srand(2);
     d_Vector v;
     v_init(&v, 4);
-    Drop d = d_create();
+    Drop d = d_create(0);
     d.speed = 3;
     v_add(&v, d);
     Drop *got = v_getAt(&v, 0);
     CHECK(got != NULL,      "v_getAt: returns non-null for valid index");
     CHECK(got->speed == 3,  "v_getAt: returns the correct element");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void vector_grow_on_add_tests(void)
@@ -113,7 +137,7 @@ static void vector_grow_on_add_tests(void)
     }
     CHECK(ok, "v_add (grow): preserves previously inserted data");
 
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void d_fall_advance_tests(void)
@@ -122,13 +146,13 @@ static void d_fall_advance_tests(void)
     srand(4);
     d_Vector v;
     v_init(&v, 4);
-    v_add(&v, d_create());
+    v_add(&v, d_create(0));
     Drop *d = v_getAt(&v, 0);
     d->h = 5;
     int speed = d->speed;
     d_fall(d);
     CHECK(d->h == 5 + speed, "d_fall: h advances by speed");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void d_fall_wrap_tests(void)
@@ -137,13 +161,13 @@ static void d_fall_wrap_tests(void)
     srand(5);
     d_Vector v;
     v_init(&v, 4);
-    v_add(&v, d_create());
+    v_add(&v, d_create(0));
     Drop *d = v_getAt(&v, 0);
     d->h     = LINES - 1;
     d->speed = 1;
     d_fall(d);
     CHECK(d->h <= 0 && d->h > -LINES, "d_fall: respawns above visible area");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void d_create_fast_tests(void)
@@ -152,7 +176,7 @@ static void d_create_fast_tests(void)
     srand(10);
     int ok_speed = 1, ok_shape = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(0);
         if (d.speed < 1 || d.speed > 5)         ok_speed = 0;
         if (d.speed < 3  && d.shape != '|')      ok_shape = 0;
         if (d.speed >= 3 && d.shape != ':')      ok_shape = 0;
@@ -167,7 +191,7 @@ static void d_create_position_tests(void)
     srand(12);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(0);
         if (d.w < 0 || d.w >= COLS)  { ok = 0; break; }
         if (d.h < 0 || d.h >= LINES) { ok = 0; break; }
     }
@@ -197,12 +221,10 @@ static void nearest_xterm256_tests(void)
 static void d_create_color_range_tests(void)
 {
     COLS = 80; LINES = 24;
-    maxColorPair = 0;
-
     srand(20);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(0);
         if (d.color < 1) { ok = 0; break; }
     }
     CHECK(ok, "d_create: color >= 1");
@@ -211,15 +233,13 @@ static void d_create_color_range_tests(void)
 static void d_create_color_clamp_tests(void)
 {
     COLS = 80; LINES = 24;
-    maxColorPair = 16;
     srand(22);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(16);
         if (d.color < 1 || d.color > 16) { ok = 0; break; }
     }
-    CHECK(ok, "d_create: color clamped to [1, maxColorPair]");
-    maxColorPair = 0;
+    CHECK(ok, "d_create: color clamped to [1, max_pair]");
 }
 
 static void config_parse_tests(void)
@@ -329,6 +349,21 @@ static void config_color_fields_tests(void)
     cfg = saved;
 }
 
+static void config_colors_imply_manual_tests(void)
+{
+    const char *path = "/tmp/rain_test_colors_implicit";
+    FILE *f = fopen(path, "w");
+    fprintf(f, "colors = #ff0000, #00ff00, #0000ff\n");
+    fclose(f);
+
+    Config saved = cfg;
+    cfg.color_mode = COLOR_MODE_AUTO;
+    config_load(path);
+    CHECK(cfg.color_mode == COLOR_MODE_MANUAL, "config: colors key implicitly sets color_mode manual");
+    unlink(path);
+    cfg = saved;
+}
+
 static void config_use_xterm256_tests(void)
 {
     const char *path = "/tmp/rain_test_config_xterm256";
@@ -397,6 +432,19 @@ static void config_rejects_invalid_values_tests(void)
     cfg = saved;
 }
 
+static void config_speed_range_tests(void)
+{
+    const char *path = "/tmp/rain_test_speed_swap";
+    FILE *f = fopen(path, "w");
+    fprintf(f, "speed_min = 9\nspeed_max = 2\n");
+    fclose(f);
+    Config saved = cfg;
+    config_load(path);
+    CHECK(cfg.speed_min <= cfg.speed_max, "config: speed range normalized");
+    unlink(path);
+    cfg = saved;
+}
+
 static void config_missing_file_tests(void)
 {
     Config saved = cfg;
@@ -411,6 +459,9 @@ static void config_missing_file_tests(void)
 
 static void getNumOfDrops_tests(void)
 {
+    double saved_density = cfg.density;
+    cfg.density = 1.5;
+
     LINES = 40; COLS = 120;
     int n = getNumOfDrops();
     CHECK(n == (int)(120 * 1.5), "getNumOfDrops: uses density * cols");
@@ -426,6 +477,8 @@ static void getNumOfDrops_tests(void)
     LINES = 0; COLS = 0;
     n = getNumOfDrops();
     CHECK(n >= 1, "getNumOfDrops: clamps to at least 1 when LINES and COLS are 0");
+
+    cfg.density = saved_density;
 }
 
 int main(void)
@@ -434,6 +487,7 @@ int main(void)
     mssleep_tests();
     vector_init_tests();
     vector_free_tests();
+    vector_init_zero_cap_tests();
     vector_add_tests();
     vector_get_tests();
     vector_grow_on_add_tests();
@@ -447,10 +501,12 @@ int main(void)
     getNumOfDrops_tests();
     config_parse_tests();
     config_sample_file_tests();
+    config_speed_range_tests();
     config_missing_file_tests();
     config_rejects_invalid_values_tests();
     config_hex_parser_tests();
     config_color_fields_tests();
+    config_colors_imply_manual_tests();
     config_use_xterm256_tests();
     config_color_mode_auto_tests();
 

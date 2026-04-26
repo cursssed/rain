@@ -14,6 +14,8 @@ WINDOW *stdscr = &_stdscr_inst;
 #define ERR        (-1)
 #define KEY_RESIZE 0632
 
+extern long bench_mvaddch_count;
+
 static inline void initscr(void)                                        {}
 static inline void noecho(void)                                         {}
 static inline void cbreak(void)                                         {}
@@ -29,7 +31,7 @@ static inline void init_color(short c, short r, short g, short b) { (void)c; (vo
 typedef unsigned long chtype;
 static inline void attron(int a)                       { (void)a; }
 static inline void attroff(int a)                      { (void)a; }
-static inline void mvaddch(int y, int x, chtype c)     { (void)y; (void)x; (void)c; }
+static inline void mvaddch(int y, int x, chtype c)     { (void)y; (void)x; (void)c; bench_mvaddch_count++; }
 static inline void endwin(void)                   {}
 static inline void refresh(void)                  {}
 static inline void erase(void)                    {}

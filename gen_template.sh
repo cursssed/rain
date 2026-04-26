@@ -13,7 +13,7 @@ printf '#define CONFIG_TEMPLATE_H\n\n'
 printf '#include <stddef.h>\n\n'
 printf 'static const char CONFIG_TEMPLATE[] =\n'
 
-awk '{
+LC_ALL=C awk '{
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
     printf "    \"%s\\n\"\n", $0;

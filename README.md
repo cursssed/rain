@@ -1,6 +1,7 @@
 # rain
 
-Comfy rain for your console, written in C with ncurses.
+ASCII rain for your terminal, written in C with ncurses.
+Survives terminal resize without flicker.
 
 <p align="center">
   <img src="https://25midi.com/f/asciirain2.gif" width="100%" alt="ascii-rain demo"/>
@@ -24,9 +25,9 @@ make
 ./rain
 ```
 
-## Install
+Press `q` to quit (configurable via `quit_key`).
 
-### System-wide
+## Install
 
 ```sh
 sudo make install              # PREFIX=/usr/local by default
@@ -49,62 +50,39 @@ Installed files:
 2. `$XDG_CONFIG_HOME/rain/config`
 3. `~/.config/rain/config`
 
-A missing config file is not an error. Built-in defaults are used instead.
+A missing config file is not an error - built-in defaults are used instead.
 
-To create a documented starter config at the default location:
+To write a starter config to the default location:
 
 ```sh
 rain --init-config
 ```
 
-By default, `--init-config` refuses to overwrite an existing file. Use `--force`
-to replace it:
-
-```sh
-rain --init-config --force
-```
-
-You can also copy `rain.conf.example` manually from:
-
-```text
-$PREFIX/share/doc/rain/rain.conf.example
-```
+Add `--force` to overwrite an existing file. See `rain.conf.example` for
+documentation of all available keys.
 
 ### Available keys
 
-All keys are optional. See `rain.conf.example` for detailed inline
-documentation.
-
 | Key | Default | Description |
 |---|---:|---|
-| `frame_delay_ms` | `30` | Delay between frames in milliseconds. Lower values make the rain faster. |
-| `density` | `1.5` | Drop density, measured as drops per terminal column. |
+| `frame_delay_ms` | `40` | Delay between frames in milliseconds. Lower is faster. |
+| `density` | `0.5` | Drop density, measured as drops per terminal column. |
 | `speed_min` | `1` | Minimum drop speed in rows per frame. |
 | `speed_max` | `5` | Maximum drop speed in rows per frame. |
 | `quit_key` | `q` | Single-character quit key. |
-| `color_mode` | `auto` | `auto` generates a gradient from `color_base`; `manual` uses `colors`. |
+| `color_mode` | `manual` | `auto` generates a gradient from `color_base`; `manual` uses `colors`. |
 | `color_base` | `#ffffff` | Base color for `auto` mode, in `#rrggbb` format. |
-| `colors` | — | Comma-separated manual palette. Setting this switches `color_mode` to `manual`. |
-| `use_xterm256` | `false` | Quantize colors to the built-in xterm-256 palette instead of using exact RGB. |
+| `colors` | `5-step grayscale` | Comma-separated palette (speed_max entries). Setting this implies `color_mode = manual`. |
+| `use_xterm256` | `false` | Quantize colors to the xterm-256 palette instead of using exact RGB. |
 
 ## Colors and terminals
 
-By default, `rain` asks the terminal to set exact RGB colors through
-`init_color`. This gives the best palette fidelity and works in terminals such
-as:
+By default, `rain` asks the terminal to set exact RGB colors via `init_color`.
+This works in ghostty, kitty, wezterm, xterm, and alacritty.
 
-- ghostty
-- kitty
-- wezterm
-- xterm
-- alacritty
-
-Some terminals report color-changing support but ignore the actual RGB palette
-changes. This can happen in konsole, some SSH sessions, tmux setups, and older
-terminal emulators.
-
-Typical symptom: drops appear in unexpected ANSI colors, often blue-ish, instead
-of the configured palette.
+Some terminals report color-changing support but ignore the actual RGB values
+(konsole, some SSH/tmux setups). Symptom: drops appear in unexpected ANSI
+colors, often blue-ish.
 
 Use this option to avoid terminal palette mutation:
 
@@ -112,30 +90,30 @@ Use this option to avoid terminal palette mutation:
 use_xterm256 = true
 ```
 
-With `use_xterm256 = true`, colors are mapped to the fixed xterm-256 palette.
-This avoids OSC-4/custom-palette behavior and is more portable across terminals
-that support 256 colors.
-
-The trade-off is slightly lower color fidelity, especially for dim or
-low-chroma colors that map into the grayscale ramp.
+Colors are then mapped to the fixed xterm-256 palette - more portable, slightly
+lower fidelity for dim or low-chroma colors.
 
 ## CLI
 
 ```text
-rain [--config <path>] [--init-config [--force]]
+rain [--config <path>] [--init-config [--force]] [--help] [--version]
 ```
 
 | Option | Description |
 |---|---|
 | `--config <path>` | Load configuration from `<path>`. |
-| `--init-config` | Write the documented default config to the standard location, or to `<path>` if used with `--config`. |
+| `--init-config` | Write a starter config to the standard location, or to `<path>` if used with `--config`. |
 | `--force` | Allow `--init-config` to overwrite an existing file. |
+| `--help`, `-h` | Show help and exit. |
+| `--version`, `-V` | Show version and exit. |
 
-## Tests
+## Tests and bench
 
 ```sh
-make test
+make test   # run test suite (no real terminal required)
+make bench  # frame-loop throughput - prints time and mvaddch call count
 ```
 
-The test suite runs against a ncurses stub, so it does not require a real
-terminal.
+## Credits
+
+Originally written by Nik, 07.2017.

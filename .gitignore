@@ -1,2 +1,16 @@
-test/rain_test
+# build artifacts
 rain
+test/rain_test
+bench/bench_frame
+config_template.h
+*.o
+*.a
+
+# release artifacts
+*.tar.gz
+
+# editor backups
+*~
+*.swp
+*.swo
+.DS_Store
