@@ -81,13 +81,14 @@ int getNumOfDrops()
     return nDrops;
 }
 
-void usage()
+static void usage(FILE *out)
 {
-    fprintf(stderr, "Usage: rain [--config <path>] [--init-config [--force]]\n");
-    fprintf(stderr, "  --config <path>   load configuration from <path>\n");
-    fprintf(stderr, "  --init-config     write a documented default config to the\n");
-    fprintf(stderr, "                    standard location (or <path> if --config given)\n");
-    fprintf(stderr, "  --force           overwrite an existing config file\n");
+    fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]]\n");
+    fprintf(out, "  --config <path>   load configuration from <path>\n");
+    fprintf(out, "  --init-config     write a documented default config to the\n");
+    fprintf(out, "                    standard location (or <path> if --config given)\n");
+    fprintf(out, "  --force           overwrite an existing config file\n");
+    fprintf(out, "  --help            show this help and exit\n");
 }
 
 Drop d_create(short max_pair)
@@ -98,7 +99,7 @@ Drop d_create(short max_pair)
     d.h = pRand(0, LINES);
 
     d.speed = pRand(cfg.speed_min, cfg.speed_max + 1);
-    (d.speed < 3) ? (d.shape = '|') : (d.shape = ':');
+    d.shape = (d.speed < 3) ? '|' : ':';
 
     int color = d.speed;
 
@@ -146,10 +147,10 @@ void v_init(d_Vector *v, int cap)
 
 void v_free(d_Vector *v)
 {
-    if(v->drops != 0)
+    if (v->drops != NULL)
     {
         free(v->drops);
-        v->drops = 0;
+        v->drops = NULL;
     }
 
     v->size = 0;
@@ -163,7 +164,7 @@ void v_add(d_Vector *v, Drop d)
         int newCap = (v->capacity > 0) ? v->capacity * 2 : 1;
         Drop *newDrops = realloc(v->drops, sizeof(*v->drops) * (size_t)newCap);
 
-        if (newDrops == 0)
+        if (newDrops == NULL)
             exitErr("\n*REALLOC FAILED*\n");
 
         v->drops    = newDrops;
@@ -350,9 +351,14 @@ int main(int argc, char **argv)
         {
             force = 1;
         }
+        else if (strcmp(argv[i], "--help") == 0)
+        {
+            usage(stdout);
+            exit(EXIT_SUCCESS);
+        }
         else
         {
-            usage();
+            usage(stderr);
             exit(EXIT_FAILURE);
         }
     }
