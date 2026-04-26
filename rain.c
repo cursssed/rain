@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <signal.h>
 #include <unistd.h>
 #include <curses.h>
 
@@ -39,12 +40,17 @@ int pRand(int min, int max)
 
 void exitCurses()
 {
+    static int done = 0;
+    if (done) return;
+    done = 1;
     curs_set(1);
     clear();
     refresh();
     resetty();
     endwin();
 }
+
+static void on_signal(int sig) { (void)sig; exit(0); }
 
 void exitErr(const char *err) __attribute__((noreturn));
 void exitErr(const char *err)
@@ -277,6 +283,9 @@ static short apply_palette(void)
 short initCurses()
 {
     initscr();
+    atexit(exitCurses);
+    signal(SIGINT,  on_signal);
+    signal(SIGTERM, on_signal);
     noecho();
     cbreak();
     keypad(stdscr, 1);
@@ -419,7 +428,6 @@ int main(int argc, char **argv)
     }
 
     v_free(&drops);
-    exitCurses();
 
     return 0;
 }
