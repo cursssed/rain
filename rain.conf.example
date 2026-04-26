@@ -6,8 +6,8 @@
 # =============================================================================
 
 # Palette mode.
-#   auto    Generate a gradient from color_base (default).
-#   manual  Use the explicit colors list below.
+#   auto    Generate a gradient from color_base.
+#   manual  Use the explicit colors list below (default).
 color_mode = manual
 
 # Base color for auto mode.

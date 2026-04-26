@@ -15,9 +15,16 @@ Config cfg = {
     .speed_min      = 1,
     .speed_max      = 5,
     .quit_key       = 'q',
-    .color_mode     = COLOR_MODE_AUTO,
-    .color_base     = { 220, 220, 230 },
-    .colors_count   = 0,
+    .color_mode     = COLOR_MODE_MANUAL,
+    .color_base     = { 255, 255, 255 },
+    .colors         = {
+        { 255, 255, 255 },
+        { 148, 148, 148 },
+        { 104, 104, 104 },
+        {  70,  70,  70 },
+        {  57,  56,  56 },
+    },
+    .colors_count   = 5,
     .use_xterm256   = 0,
 };
 
