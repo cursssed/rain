@@ -30,24 +30,68 @@ typedef struct
 } d_Vector;
 
 
-Drop d_create();
-void d_fall(Drop *d);
-void d_show(Drop *d);
+int pRand(int min, int max)
+{
+    max -= 1;
+    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+}
 
-void v_init(d_Vector *v, int cap);
-void v_free(d_Vector *v);
-void v_delete(d_Vector *v);
-void v_add(d_Vector *v, Drop d);
-Drop *v_getAt(d_Vector *v, int pos);
+void exitCurses()
+{
+    curs_set(1);
+    clear();
+    refresh();
+    resetty();
+    endwin();
+}
 
-void initCurses();
-void exitCurses();
-
-int pRand(int min, int max);
-int getNumOfDrops();
 void exitErr(const char *err) __attribute__((noreturn));
-void usage();
+void exitErr(const char *err)
+{
+    exitCurses();
+    fprintf(stderr, "%s", err);
+    exit(EXIT_FAILURE);
+}
 
+int mssleep(long msec)
+{
+    struct timespec ts;
+    int res;
+
+    if (msec < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ts.tv_sec  = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res && errno == EINTR);
+
+    return res;
+}
+
+int getNumOfDrops()
+{
+    int nDrops = (int) (COLS * cfg.density);
+
+    if (nDrops < 1)
+        nDrops = 1;
+
+    return nDrops;
+}
+
+void usage()
+{
+    fprintf(stderr, "Usage: rain [--config <path>] [--init-config [--force]]\n");
+    fprintf(stderr, "  --config <path>   load configuration from <path>\n");
+    fprintf(stderr, "  --init-config     write a documented default config to the\n");
+    fprintf(stderr, "                    standard location (or <path> if --config given)\n");
+    fprintf(stderr, "  --force           overwrite an existing config file\n");
+}
 
 Drop d_create()
 {
@@ -114,11 +158,6 @@ void v_free(d_Vector *v)
 
     v->size = 0;
     v->capacity = 0;
-}
-
-void v_delete(d_Vector *v)
-{
-    v_free(v);
 }
 
 void v_add(d_Vector *v, Drop d)
@@ -259,69 +298,6 @@ void initCurses()
 
 }
 
-void exitCurses()
-{
-    curs_set(1);
-    clear();
-    refresh();
-    resetty();
-    endwin();
-}
-
-
-int pRand(int min, int max)
-{
-    max -= 1;
-    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
-}
-
-void exitErr(const char *err)
-{
-    exitCurses();
-    fprintf(stderr, "%s", err);
-    exit(EXIT_FAILURE);
-}
-
-int getNumOfDrops()
-{
-    int nDrops = (int) (COLS * cfg.density);
-
-    if (nDrops < 1)
-        nDrops = 1;
-
-    return nDrops;
-}
-
-void usage()
-{
-    fprintf(stderr, "Usage: rain [--config <path>] [--init-config [--force]]\n");
-    fprintf(stderr, "  --config <path>   load configuration from <path>\n");
-    fprintf(stderr, "  --init-config     write a documented default config to the\n");
-    fprintf(stderr, "                    standard location (or <path> if --config given)\n");
-    fprintf(stderr, "  --force           overwrite an existing config file\n");
-}
-
-int mssleep(long msec)
-{
-    struct timespec ts;
-    int res;
-
-    if (msec < 0)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    ts.tv_sec  = msec / 1000;
-    ts.tv_nsec = (msec % 1000) * 1000000;
-
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res && errno == EINTR);
-
-    return res;
-}
-
 
 int main(int argc, char **argv)
 {
@@ -438,7 +414,7 @@ int main(int argc, char **argv)
         erase();
     }
 
-    v_delete(&drops);
+    v_free(&drops);
     exitCurses();
 
     return 0;

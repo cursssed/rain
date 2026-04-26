@@ -69,7 +69,7 @@ static void vector_add_tests(void)
     for (int i = 0; i < 10; i++)
         v_add(&v, d_create());
     CHECK(v.size == 10, "v_add: size increments on each add");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void vector_get_tests(void)
@@ -84,7 +84,7 @@ static void vector_get_tests(void)
     Drop *got = v_getAt(&v, 0);
     CHECK(got != NULL,      "v_getAt: returns non-null for valid index");
     CHECK(got->speed == 3,  "v_getAt: returns the correct element");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void vector_grow_on_add_tests(void)
@@ -113,7 +113,7 @@ static void vector_grow_on_add_tests(void)
     }
     CHECK(ok, "v_add (grow): preserves previously inserted data");
 
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void d_fall_advance_tests(void)
@@ -128,7 +128,7 @@ static void d_fall_advance_tests(void)
     int speed = d->speed;
     d_fall(d);
     CHECK(d->h == 5 + speed, "d_fall: h advances by speed");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void d_fall_wrap_tests(void)
@@ -143,7 +143,7 @@ static void d_fall_wrap_tests(void)
     d->speed = 1;
     d_fall(d);
     CHECK(d->h <= 0 && d->h > -LINES, "d_fall: respawns above visible area");
-    v_delete(&v);
+    v_free(&v);
 }
 
 static void d_create_fast_tests(void)
