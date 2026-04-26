@@ -383,9 +383,9 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        for (int i = 0; i < dropsTotal; i++)
+        for (int i = 0; i < drops.size; i++)
         {
-            Drop *d = v_getAt(&drops, i);
+            Drop *d = &drops.drops[i];
             d_fall(d);
             d_show(d);
         }
