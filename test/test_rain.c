@@ -31,6 +31,8 @@ static void pRand_tests(void)
         if (v < 5 || v > 14) { ok = 0; break; }
     }
     CHECK(ok, "pRand [5,15): all samples within bounds");
+
+    CHECK(pRand(5, 6) == 5, "pRand: max excluded (single-value range)");
 }
 
 static void mssleep_tests(void)
