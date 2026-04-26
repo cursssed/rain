@@ -89,8 +89,8 @@ static void usage(FILE *out)
 {
     fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]] [--help] [--version]\n");
     fprintf(out, "  --config <path>   load configuration from <path>\n");
-    fprintf(out, "  --init-config     write a documented default config to the\n");
-    fprintf(out, "                    standard location (or <path> if --config given)\n");
+    fprintf(out, "  --init-config     write a starter config to the standard\n");
+    fprintf(out, "                    location (or <path> if --config given)\n");
     fprintf(out, "  --force           overwrite an existing config file\n");
     fprintf(out, "  --help, -h        show this help and exit\n");
     fprintf(out, "  --version, -V     show version and exit\n");
