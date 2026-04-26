@@ -387,6 +387,12 @@ int main(int argc, char **argv)
         }
     }
 
+    if (force && !init_config)
+    {
+        fprintf(stderr, "rain: --force only makes sense with --init-config\n");
+        exit(EXIT_FAILURE);
+    }
+
     if (init_config)
         exit(config_init(config_path, force) == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 
