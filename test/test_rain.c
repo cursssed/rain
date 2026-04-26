@@ -67,7 +67,7 @@ static void vector_add_tests(void)
     d_Vector v;
     v_init(&v, 16);
     for (int i = 0; i < 10; i++)
-        v_add(&v, d_create());
+        v_add(&v, d_create(0));
     CHECK(v.size == 10, "v_add: size increments on each add");
     v_free(&v);
 }
@@ -78,7 +78,7 @@ static void vector_get_tests(void)
     srand(2);
     d_Vector v;
     v_init(&v, 4);
-    Drop d = d_create();
+    Drop d = d_create(0);
     d.speed = 3;
     v_add(&v, d);
     Drop *got = v_getAt(&v, 0);
@@ -122,7 +122,7 @@ static void d_fall_advance_tests(void)
     srand(4);
     d_Vector v;
     v_init(&v, 4);
-    v_add(&v, d_create());
+    v_add(&v, d_create(0));
     Drop *d = v_getAt(&v, 0);
     d->h = 5;
     int speed = d->speed;
@@ -137,7 +137,7 @@ static void d_fall_wrap_tests(void)
     srand(5);
     d_Vector v;
     v_init(&v, 4);
-    v_add(&v, d_create());
+    v_add(&v, d_create(0));
     Drop *d = v_getAt(&v, 0);
     d->h     = LINES - 1;
     d->speed = 1;
@@ -152,7 +152,7 @@ static void d_create_fast_tests(void)
     srand(10);
     int ok_speed = 1, ok_shape = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(0);
         if (d.speed < 1 || d.speed > 5)         ok_speed = 0;
         if (d.speed < 3  && d.shape != '|')      ok_shape = 0;
         if (d.speed >= 3 && d.shape != ':')      ok_shape = 0;
@@ -167,7 +167,7 @@ static void d_create_position_tests(void)
     srand(12);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(0);
         if (d.w < 0 || d.w >= COLS)  { ok = 0; break; }
         if (d.h < 0 || d.h >= LINES) { ok = 0; break; }
     }
@@ -197,12 +197,10 @@ static void nearest_xterm256_tests(void)
 static void d_create_color_range_tests(void)
 {
     COLS = 80; LINES = 24;
-    maxColorPair = 0;
-
     srand(20);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(0);
         if (d.color < 1) { ok = 0; break; }
     }
     CHECK(ok, "d_create: color >= 1");
@@ -211,15 +209,13 @@ static void d_create_color_range_tests(void)
 static void d_create_color_clamp_tests(void)
 {
     COLS = 80; LINES = 24;
-    maxColorPair = 16;
     srand(22);
     int ok = 1;
     for (int i = 0; i < 500; i++) {
-        Drop d = d_create();
+        Drop d = d_create(16);
         if (d.color < 1 || d.color > 16) { ok = 0; break; }
     }
-    CHECK(ok, "d_create: color clamped to [1, maxColorPair]");
-    maxColorPair = 0;
+    CHECK(ok, "d_create: color clamped to [1, max_pair]");
 }
 
 static void config_parse_tests(void)

@@ -9,8 +9,6 @@
 #include "config.h"
 
 
-short maxColorPair = 0;
-
 typedef struct
 {
     int  w;
@@ -92,7 +90,7 @@ void usage()
     fprintf(stderr, "  --force           overwrite an existing config file\n");
 }
 
-Drop d_create()
+Drop d_create(short max_pair)
 {
     Drop d;
 
@@ -106,8 +104,8 @@ Drop d_create()
 
     if (color < 1)
         color = 1;
-    if (maxColorPair > 0 && color > maxColorPair)
-        color = maxColorPair;
+    if (max_pair > 0 && color > max_pair)
+        color = max_pair;
 
     d.color = color;
     return d;
@@ -243,7 +241,7 @@ static void build_palette(RgbColor *out, int count)
     }
 }
 
-static void apply_palette(void)
+static short apply_palette(void)
 {
     int count = cfg.speed_max;
     if (count < 1) count = 1;
@@ -271,10 +269,10 @@ static void apply_palette(void)
         }
     }
 
-    maxColorPair = limit;
+    return limit;
 }
 
-void initCurses()
+short initCurses()
 {
     initscr();
     noecho();
@@ -290,15 +288,14 @@ void initCurses()
     {
         use_default_colors();
         start_color();
-        apply_palette();
+        return apply_palette();
     }
-    else
-        exitErr("\n*Terminal emulator lacks capabilities.\n(Can't have colors).\n*");
 
+    exitErr("\n*Terminal emulator lacks capabilities.\n(Can't have colors).\n*");
 }
 
 
-static void handle_resize(d_Vector *drops, int *dropsTotal, int *lastLines, int *lastCols)
+static void handle_resize(d_Vector *drops, int *dropsTotal, int *lastLines, int *lastCols, short max_pair)
 {
     if (LINES == *lastLines && COLS == *lastCols)
         return;
@@ -324,7 +321,7 @@ static void handle_resize(d_Vector *drops, int *dropsTotal, int *lastLines, int 
 
         for (int i = drops->size; i < newTotal; i++)
         {
-            Drop d = d_create();
+            Drop d = d_create(max_pair);
             d.w = pRand(wStart, COLS);
             d.h = pRand(hStart, LINES);
             v_add(drops, d);
@@ -375,14 +372,14 @@ int main(int argc, char **argv)
     config_load(config_path);
 
     srand((unsigned int) (time(NULL) ^ getpid()));
-    initCurses();
+    short max_pair = initCurses();
 
     int dropsTotal = getNumOfDrops();
     d_Vector drops;
     v_init(&drops, dropsTotal);
 
     for (int i = 0; i < dropsTotal; i++)
-        v_add(&drops, d_create());
+        v_add(&drops, d_create(max_pair));
 
     int lastLines = 0;
     int lastCols  = 0;
@@ -404,7 +401,7 @@ int main(int argc, char **argv)
         if (ch == cfg.quit_key)
             break;
         if (ch == KEY_RESIZE)
-            handle_resize(&drops, &dropsTotal, &lastLines, &lastCols);
+            handle_resize(&drops, &dropsTotal, &lastLines, &lastCols, max_pair);
 
         erase();
     }
