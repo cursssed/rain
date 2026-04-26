@@ -459,6 +459,9 @@ static void config_missing_file_tests(void)
 
 static void getNumOfDrops_tests(void)
 {
+    double saved_density = cfg.density;
+    cfg.density = 1.5;
+
     LINES = 40; COLS = 120;
     int n = getNumOfDrops();
     CHECK(n == (int)(120 * 1.5), "getNumOfDrops: uses density * cols");
@@ -474,6 +477,8 @@ static void getNumOfDrops_tests(void)
     LINES = 0; COLS = 0;
     n = getNumOfDrops();
     CHECK(n >= 1, "getNumOfDrops: clamps to at least 1 when LINES and COLS are 0");
+
+    cfg.density = saved_density;
 }
 
 int main(void)

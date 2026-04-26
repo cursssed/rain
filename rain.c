@@ -83,7 +83,7 @@ int getNumOfDrops()
 
 static void usage(FILE *out)
 {
-    fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]]\n");
+    fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]] [--help]\n");
     fprintf(out, "  --config <path>   load configuration from <path>\n");
     fprintf(out, "  --init-config     write a documented default config to the\n");
     fprintf(out, "                    standard location (or <path> if --config given)\n");

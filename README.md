@@ -122,7 +122,7 @@ low-chroma colors that map into the grayscale ramp.
 ## CLI
 
 ```text
-rain [--config <path>] [--init-config [--force]]
+rain [--config <path>] [--init-config [--force]] [--help]
 ```
 
 | Option | Description |
@@ -130,6 +130,7 @@ rain [--config <path>] [--init-config [--force]]
 | `--config <path>` | Load configuration from `<path>`. |
 | `--init-config` | Write the documented default config to the standard location, or to `<path>` if used with `--config`. |
 | `--force` | Allow `--init-config` to overwrite an existing file. |
+| `--help` | Show help and exit. |
 
 ## Tests
 
