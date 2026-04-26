@@ -1,40 +1,3 @@
-/*
-
-                                 000      00
-                           0000000   0000
-              0      00  00000000000000000
-            0000 0  000000000000000000000000       0
-         000000000000000000000000000000000000000 000
-        0000000000000000000000000000000000000000000000
-    000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000
-            C
-                O M        |
-                    F          |
-                 Y                         |         |
-            |                R  A
-                                  I N
-                       I N   |
-              |                                    |
-        |                            Y O
-                |                   U        R
-                   |            T E
-
-                                     R   |   |
-                         |            M
-                               I N
-                                        AL
-
-
-    Although this was a purely fun-motivated project I
-    challenged myself to write this code clean & leak-free.
-
-    If you find bugs or leaks feel free to contact me or fork
-    this. That would be awesome.
-
-    @ Nik, 07.2017
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,10 +8,6 @@
 
 #include "config.h"
 
-
-//
-//  GLOBALS
-//
 
 int userResized = 0;
 short maxColorPair = 0;
@@ -62,13 +21,6 @@ typedef struct
     char shape;
 } Drop;
 
-/**
- * Since we want the total number of drops to
- * be terminal-size dependent we need a dynamic/
- * resizeable data structure containing an array of
- * drops.
- */
-
 typedef struct
 {
     Drop *drops;
@@ -77,10 +29,6 @@ typedef struct
 
 } d_Vector;
 
-
-//
-//  PROTOTYPES
-//
 
 Drop d_create();
 void d_fall(Drop *d);
@@ -100,10 +48,6 @@ int getNumOfDrops();
 void exitErr(const char *err) __attribute__((noreturn));
 void usage();
 
-
-//
-//  FUNCTIONS - DROP
-//
 
 Drop d_create()
 {
@@ -141,10 +85,6 @@ void d_show(Drop *d)
     attroff(COLOR_PAIR(d->color));
 }
 
-
-//
-//  FUNCTIONS - VECTOR
-//
 
 void v_init(d_Vector *v, int cap)
 {
@@ -207,10 +147,6 @@ Drop *v_getAt(d_Vector *v, int pos)
     exitErr("\n*BAD ACCESS*\n");
 }
 
-
-//
-//  FUNCTIONS - CURSES
-//
 
 static short nearest_xterm256(RgbColor c)
 {
@@ -333,10 +269,6 @@ void exitCurses()
 }
 
 
-//
-//  UTILS
-//
-
 int pRand(int min, int max)
 {
     max -= 1;
@@ -369,7 +301,6 @@ void usage()
     fprintf(stderr, "  --force           overwrite an existing config file\n");
 }
 
-// wrapper around nanosleep, replacing deprecated usleep func 
 int mssleep(long msec)
 {
     struct timespec ts;
@@ -435,10 +366,6 @@ int main(int argc, char **argv)
         v_add(&drops, d_create());
 
 
-    //
-    //  DRAW-LOOP
-    //
-
     while (1)
     {
 
@@ -500,7 +427,6 @@ int main(int argc, char **argv)
 
         refresh();
 
-        // Frame Delay
         mssleep(cfg.frame_delay_ms);
 
         int ch = wgetch(stdscr);
@@ -512,7 +438,6 @@ int main(int argc, char **argv)
         erase();
     }
 
-    // Free pointers & exit gracefully
     v_delete(&drops);
     exitCurses();
 

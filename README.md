@@ -139,3 +139,7 @@ make test
 
 The test suite runs against a ncurses stub, so it does not require a real
 terminal.
+
+## Credits
+
+Originally written by Nik, 07.2017.
