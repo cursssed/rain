@@ -248,6 +248,10 @@ void config_load(const char *explicit_path)
                 cfg.speed_min, cfg.speed_max);
         int t = cfg.speed_min; cfg.speed_min = cfg.speed_max; cfg.speed_max = t;
     }
+
+    if (cfg.color_mode == COLOR_MODE_MANUAL && cfg.colors_count < cfg.speed_max)
+        fprintf(stderr, "rain: manual palette has %d entries, need %d; falling back to auto\n",
+                cfg.colors_count, cfg.speed_max);
 }
 
 static int mkdir_p(const char *path)

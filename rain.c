@@ -236,10 +236,6 @@ static void build_palette(RgbColor *out, int count)
         return;
     }
 
-    if (cfg.color_mode == COLOR_MODE_MANUAL)
-        fprintf(stderr, "rain: manual colors list has %d entries, need %d; falling back to auto\n",
-                cfg.colors_count, count);
-
     for (int i = 0; i < count; i++)
     {
         double m = (count <= 1) ? 1.0 : 1.0 - 0.25 * i / (double)(count - 1);
