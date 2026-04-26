@@ -9,7 +9,6 @@
 #include "config.h"
 
 
-int userResized = 0;
 short maxColorPair = 0;
 
 typedef struct
@@ -299,6 +298,50 @@ void initCurses()
 }
 
 
+static void handle_resize(d_Vector *drops, int *dropsTotal, int *lastLines, int *lastCols)
+{
+    if (LINES == *lastLines && COLS == *lastCols)
+        return;
+
+    if (COLS < *lastCols || LINES < *lastLines)
+    {
+        int w = 0;
+        for (int r = 0; r < drops->size; r++)
+        {
+            Drop *d = &drops->drops[r];
+            if (d->w < COLS && d->h < LINES)
+                drops->drops[w++] = *d;
+        }
+        drops->size = w;
+    }
+
+    int newTotal = getNumOfDrops();
+
+    if (newTotal > drops->size)
+    {
+        int wStart = (COLS  > *lastCols)  ? *lastCols  : 0;
+        int hStart = (LINES > *lastLines) ? *lastLines : 0;
+
+        for (int i = drops->size; i < newTotal; i++)
+        {
+            Drop d = d_create();
+            d.w = pRand(wStart, COLS);
+            d.h = pRand(hStart, LINES);
+            v_add(drops, d);
+        }
+    }
+    else if (newTotal < drops->size)
+    {
+        drops->size = newTotal;
+    }
+
+    *dropsTotal = newTotal;
+    *lastLines  = LINES;
+    *lastCols   = COLS;
+
+    clearok(stdscr, 1);
+}
+
 int main(int argc, char **argv)
 {
     const char *config_path = NULL;
@@ -341,59 +384,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < dropsTotal; i++)
         v_add(&drops, d_create());
 
+    int lastLines = 0;
+    int lastCols  = 0;
 
     while (1)
     {
-
-        if (userResized)
-        {
-            static int lastLines = 0;
-            static int lastCols  = 0;
-
-            if (LINES != lastLines || COLS != lastCols)
-            {
-                if (COLS < lastCols || LINES < lastLines)
-                {
-                    int w = 0;
-                    for (int r = 0; r < drops.size; r++)
-                    {
-                        Drop *d = &drops.drops[r];
-                        if (d->w < COLS && d->h < LINES)
-                            drops.drops[w++] = *d;
-                    }
-                    drops.size = w;
-                }
-
-                int newTotal = getNumOfDrops();
-
-                if (newTotal > drops.size)
-                {
-                    int wStart = (COLS  > lastCols)  ? lastCols  : 0;
-                    int hStart = (LINES > lastLines) ? lastLines : 0;
-
-                    for (int i = drops.size; i < newTotal; i++)
-                    {
-                        Drop d = d_create();
-                        d.w = pRand(wStart, COLS);
-                        d.h = pRand(hStart, LINES);
-                        v_add(&drops, d);
-                    }
-                }
-                else if (newTotal < drops.size)
-                {
-                    drops.size = newTotal;
-                }
-
-                dropsTotal = newTotal;
-                lastLines  = LINES;
-                lastCols   = COLS;
-
-                clearok(stdscr, 1);
-            }
-
-            userResized = 0;
-        }
-
         for (int i = 0; i < dropsTotal; i++)
         {
             Drop *d = v_getAt(&drops, i);
@@ -409,7 +404,7 @@ int main(int argc, char **argv)
         if (ch == cfg.quit_key)
             break;
         if (ch == KEY_RESIZE)
-            userResized = 1;
+            handle_resize(&drops, &dropsTotal, &lastLines, &lastCols);
 
         erase();
     }
