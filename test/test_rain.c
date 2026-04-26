@@ -6,6 +6,13 @@
 #include "../config.c"
 #undef main
 
+static Drop *v_getAt(d_Vector *v, int pos)
+{
+    if (pos >= 0 && pos < v->size)
+        return &v->drops[pos];
+    return NULL;
+}
+
 static int passed = 0;
 static int failed = 0;
 

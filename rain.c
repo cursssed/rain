@@ -174,14 +174,6 @@ void v_add(d_Vector *v, Drop d)
     v->size++;
 }
 
-Drop *v_getAt(d_Vector *v, int pos)
-{
-    if ((pos < v->size) && (pos >= 0))
-        return &(v->drops[pos]);
-
-    exitErr("\n*BAD ACCESS*\n");
-}
-
 
 static short nearest_xterm256(RgbColor c)
 {
