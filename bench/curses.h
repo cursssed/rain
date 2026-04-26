@@ -28,9 +28,10 @@ static inline void use_default_colors(void)       {}
 static inline void start_color(void)              {}
 static inline void init_pair(short p, short f, short b) { (void)p; (void)f; (void)b; }
 static inline void init_color(short c, short r, short g, short b) { (void)c; (void)r; (void)g; (void)b; }
-static inline void attron(int a)                  { (void)a; }
-static inline void attroff(int a)                 { (void)a; }
-static inline void mvaddch(int y, int x, char c)  { (void)y; (void)x; (void)c; bench_mvaddch_count++; }
+typedef unsigned long chtype;
+static inline void attron(int a)                       { (void)a; }
+static inline void attroff(int a)                      { (void)a; }
+static inline void mvaddch(int y, int x, chtype c)     { (void)y; (void)x; (void)c; bench_mvaddch_count++; }
 static inline void endwin(void)                   {}
 static inline void refresh(void)                  {}
 static inline void erase(void)                    {}
