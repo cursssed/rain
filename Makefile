@@ -1,5 +1,6 @@
 CC          = gcc
-CFLAGS      = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -O2
+VERSION     ?= 0.2.0
+CFLAGS      = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -O2 -DRAIN_VERSION=\"$(VERSION)\"
 LDLIBS      = -lncurses
 TEST_FLAGS  = $(CFLAGS) -Wno-unused-parameter
 BENCH_FLAGS = $(CFLAGS) -Wno-unused-parameter

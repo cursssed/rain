@@ -8,6 +8,10 @@
 
 #include "config.h"
 
+#ifndef RAIN_VERSION
+#define RAIN_VERSION "unknown"
+#endif
+
 
 typedef struct
 {
@@ -83,12 +87,20 @@ int getNumOfDrops()
 
 static void usage(FILE *out)
 {
-    fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]] [--help]\n");
+    fprintf(out, "Usage: rain [--config <path>] [--init-config [--force]] [--help] [--version]\n");
     fprintf(out, "  --config <path>   load configuration from <path>\n");
     fprintf(out, "  --init-config     write a documented default config to the\n");
     fprintf(out, "                    standard location (or <path> if --config given)\n");
     fprintf(out, "  --force           overwrite an existing config file\n");
-    fprintf(out, "  --help            show this help and exit\n");
+    fprintf(out, "  --help, -h        show this help and exit\n");
+    fprintf(out, "  --version, -V     show version and exit\n");
+    fprintf(out, "\n");
+    fprintf(out, "Config search order:\n");
+    fprintf(out, "  --config <path>\n");
+    fprintf(out, "  $XDG_CONFIG_HOME/rain/config\n");
+    fprintf(out, "  $HOME/.config/rain/config\n");
+    fprintf(out, "\n");
+    fprintf(out, "Press 'q' to quit (configurable via quit_key in config).\n");
 }
 
 Drop d_create(short max_pair)
@@ -349,9 +361,14 @@ int main(int argc, char **argv)
         {
             force = 1;
         }
-        else if (strcmp(argv[i], "--help") == 0)
+        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
         {
             usage(stdout);
+            exit(EXIT_SUCCESS);
+        }
+        else if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-V") == 0)
+        {
+            printf("rain %s\n", RAIN_VERSION);
             exit(EXIT_SUCCESS);
         }
         else
