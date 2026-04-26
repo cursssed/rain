@@ -10,8 +10,8 @@
 #include <sys/types.h>
 
 Config cfg = {
-    .frame_delay_ms = 30,
-    .density        = 1.5,
+    .frame_delay_ms = 40,
+    .density        = 0.5,
     .speed_min      = 1,
     .speed_max      = 5,
     .quit_key       = 'q',
@@ -150,7 +150,10 @@ static void apply_option(const char *key, const char *value)
     {
         int n = parse_colors_list(value, cfg.colors, MAX_COLORS);
         if (n > 0)
+        {
             cfg.colors_count = n;
+            cfg.color_mode   = COLOR_MODE_MANUAL;
+        }
         else
             fprintf(stderr, "rain: invalid colors list: '%s'\n", value);
     }

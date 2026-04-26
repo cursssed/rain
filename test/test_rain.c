@@ -349,6 +349,21 @@ static void config_color_fields_tests(void)
     cfg = saved;
 }
 
+static void config_colors_imply_manual_tests(void)
+{
+    const char *path = "/tmp/rain_test_colors_implicit";
+    FILE *f = fopen(path, "w");
+    fprintf(f, "colors = #ff0000, #00ff00, #0000ff\n");
+    fclose(f);
+
+    Config saved = cfg;
+    cfg.color_mode = COLOR_MODE_AUTO;
+    config_load(path);
+    CHECK(cfg.color_mode == COLOR_MODE_MANUAL, "config: colors key implicitly sets color_mode manual");
+    unlink(path);
+    cfg = saved;
+}
+
 static void config_use_xterm256_tests(void)
 {
     const char *path = "/tmp/rain_test_config_xterm256";
@@ -486,6 +501,7 @@ int main(void)
     config_rejects_invalid_values_tests();
     config_hex_parser_tests();
     config_color_fields_tests();
+    config_colors_imply_manual_tests();
     config_use_xterm256_tests();
     config_color_mode_auto_tests();
 

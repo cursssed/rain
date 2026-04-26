@@ -14,7 +14,7 @@ color_mode = manual
 # Format: #rrggbb
 # color_base = #ffffff
 
-# Manual palette - required when color_mode = manual.
+# Manual palette. Setting this implicitly enables color_mode = manual.
 # Must contain exactly speed_max entries (default: 5), brightest first.
 # Too few entries fall back to auto mode; extra entries are ignored.
 # Format: #rrggbb, #rrggbb, ...
