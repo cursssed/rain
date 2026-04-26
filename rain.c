@@ -135,7 +135,7 @@ void v_init(d_Vector *v, int cap)
 
     if (cap > 0)
     {
-        v->drops = malloc(sizeof(Drop) * (size_t)cap);
+        v->drops = malloc(sizeof(*v->drops) * (size_t)cap);
         if (!v->drops)
             exitErr("\n*alloc failed*\n");
         v->capacity = cap;
@@ -159,7 +159,7 @@ void v_add(d_Vector *v, Drop d)
     if (v->size >= v->capacity)
     {
         int newCap = (v->capacity > 0) ? v->capacity * 2 : 1;
-        Drop *newDrops = realloc(v->drops, sizeof(Drop) * newCap);
+        Drop *newDrops = realloc(v->drops, sizeof(*v->drops) * (size_t)newCap);
 
         if (newDrops == 0)
             exitErr("\n*REALLOC FAILED*\n");
