@@ -1,7 +1,8 @@
 CC          = gcc
-CFLAGS      = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L
+CFLAGS      = -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -O2
+LDLIBS      = -lncurses
 TEST_FLAGS  = $(CFLAGS) -Wno-unused-parameter
-BENCH_FLAGS = $(CFLAGS) -Wno-unused-parameter -O2
+BENCH_FLAGS = $(CFLAGS) -Wno-unused-parameter
 
 PREFIX    ?= /usr/local
 BINDIR    ?= $(PREFIX)/bin
@@ -13,7 +14,7 @@ config_template.h: rain.conf.example gen_template.sh
 	./gen_template.sh rain.conf.example > $@
 
 rain: rain.c config.c config.h config_template.h
-	$(CC) $(CFLAGS) -o rain rain.c config.c -lncurses
+	$(CC) $(CFLAGS) -o rain rain.c config.c $(LDLIBS)
 
 test/rain_test: test/test_rain.c test/curses.h rain.c config.c config.h config_template.h
 	$(CC) $(TEST_FLAGS) -I test/ -I . -o test/rain_test test/test_rain.c
