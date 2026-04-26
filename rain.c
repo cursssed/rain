@@ -119,8 +119,10 @@ void d_fall(Drop *d)
         d->h = -pRand(0, LINES);
 }
 
-void d_show(Drop *d)
+static void d_show(Drop *d)
 {
+    if (d->h < 0)
+        return;
     attron(COLOR_PAIR(d->color));
     mvaddch(d->h, d->w, d->shape);
     attroff(COLOR_PAIR(d->color));
