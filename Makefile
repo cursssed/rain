@@ -8,6 +8,7 @@ BENCH_FLAGS = $(CFLAGS) -Wno-unused-parameter
 PREFIX    ?= /usr/local
 BINDIR    ?= $(PREFIX)/bin
 DOCDIR    ?= $(PREFIX)/share/doc/rain
+MANDIR    ?= $(PREFIX)/share/man/man1
 
 .DEFAULT_GOAL := rain
 
@@ -31,6 +32,7 @@ bench: bench/bench_frame
 
 install: rain
 	install -Dm755 rain $(DESTDIR)$(BINDIR)/rain
+	install -Dm644 rain.1 $(DESTDIR)$(MANDIR)/rain.1
 	install -Dm644 rain.conf.example $(DESTDIR)$(DOCDIR)/rain.conf.example
 	install -Dm644 LICENSE $(DESTDIR)$(PREFIX)/share/licenses/rain/LICENSE
 
