@@ -1,7 +1,7 @@
 # rain
 
-ASCII rain for your terminal, written in C with ncurses.
-Survives terminal resize without flicker.
+ASCII rain for your terminal, written in C with ncurses.  
+**Customizable colors** (RGB + auto gradient or manual palette) and survives terminal resize without flicker.
 
 <p align="center">
   <img src="https://25midi.com/f/asciirain2.gif" width="100%" alt="ascii-rain demo"/>
